@@ -14,3 +14,18 @@
 .cxx
 local.properties
 .kiro
+
+# Google Cloud Project secrets
+google-services.json
+agro-service.json
+*.json
+!gradle/wrapper/*.json
+!package.json
+!tsconfig.json
+!app.json
+service-account*.json
+*-firebase-adminsdk-*.json
+gcp-key*.json
+google-cloud-key*.json
+credentials.json
+client_secret*.json
