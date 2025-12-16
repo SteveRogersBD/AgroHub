@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: feed-service-test
+
+server:
+  port: 0
+
+jwt:
+  secret: mySecretKeyForJWTTokenGenerationAndValidation1234567890
+
+services:
+  follow-service:
+    url: http://localhost:8083
+  post-service:
+    url: http://localhost:8084
+  comment-service:
+    url: http://localhost:8085
+  like-service:
+    url: http://localhost:8086
+
+logging:
+  level:
+    com.socialmedia.feed: DEBUG

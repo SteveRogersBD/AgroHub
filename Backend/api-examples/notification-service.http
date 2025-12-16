@@ -1,0 +1,218 @@
+### Notification Service API Examples
+### Base URL: http://localhost:8088/api/notifications (direct) or http://localhost:8080/api/notifications (via gateway)
+
+### Variables
+@baseUrl = http://localhost:8080/api/notifications
+@accessToken = YOUR_JWT_TOKEN_HERE
+
+### 1. Get all notifications for current user
+GET {{baseUrl}}?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [
+#     {
+#       "id": 5,
+#       "userId": 1,
+#       "type": "LIKE",
+#       "actorId": 2,
+#       "actorUsername": "janesmith",
+#       "actorAvatarUrl": "https://example.com/avatars/janesmith.jpg",
+#       "entityId": 10,
+#       "message": "janesmith liked your post",
+#       "read": false,
+#       "createdAt": "2024-01-15T14:30:00"
+#     },
+#     {
+#       "id": 4,
+#       "userId": 1,
+#       "type": "COMMENT",
+#       "actorId": 3,
+#       "actorUsername": "bobwilson",
+#       "actorAvatarUrl": "https://example.com/avatars/bobwilson.jpg",
+#       "entityId": 10,
+#       "message": "bobwilson commented on your post",
+#       "read": false,
+#       "createdAt": "2024-01-15T13:15:00"
+#     },
+#     {
+#       "id": 3,
+#       "userId": 1,
+#       "type": "FOLLOW",
+#       "actorId": 4,
+#       "actorUsername": "alicejones",
+#       "actorAvatarUrl": "https://example.com/avatars/alicejones.jpg",
+#       "entityId": null,
+#       "message": "alicejones started following you",
+#       "read": true,
+#       "createdAt": "2024-01-15T10:00:00"
+#     }
+#   ],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 3,
+#   "totalPages": 1,
+#   "last": true
+# }
+
+### 2. Get unread notifications only
+GET {{baseUrl}}/unread?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [
+#     {
+#       "id": 5,
+#       "userId": 1,
+#       "type": "LIKE",
+#       "actorId": 2,
+#       "actorUsername": "janesmith",
+#       "actorAvatarUrl": "https://example.com/avatars/janesmith.jpg",
+#       "entityId": 10,
+#       "message": "janesmith liked your post",
+#       "read": false,
+#       "createdAt": "2024-01-15T14:30:00"
+#     },
+#     {
+#       "id": 4,
+#       "userId": 1,
+#       "type": "COMMENT",
+#       "actorId": 3,
+#       "actorUsername": "bobwilson",
+#       "actorAvatarUrl": "https://example.com/avatars/bobwilson.jpg",
+#       "entityId": 10,
+#       "message": "bobwilson commented on your post",
+#       "read": false,
+#       "createdAt": "2024-01-15T13:15:00"
+#     }
+#   ],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 2,
+#   "totalPages": 1,
+#   "last": true
+# }
+
+### 3. Mark a notification as read
+PUT {{baseUrl}}/5/read
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 5,
+#   "userId": 1,
+#   "type": "LIKE",
+#   "actorId": 2,
+#   "actorUsername": "janesmith",
+#   "actorAvatarUrl": "https://example.com/avatars/janesmith.jpg",
+#   "entityId": 10,
+#   "message": "janesmith liked your post",
+#   "read": true,
+#   "createdAt": "2024-01-15T14:30:00"
+# }
+
+### 4. Mark all notifications as read
+PUT {{baseUrl}}/read-all
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "message": "All notifications marked as read",
+#   "count": 5
+# }
+
+### 5. Get notifications with pagination (page 2)
+GET {{baseUrl}}?page=1&size=5
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns second page of notifications (if available)
+
+### 6. Get notifications when there are none
+GET {{baseUrl}}?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 0,
+#   "totalPages": 0,
+#   "last": true
+# }
+
+### 7. Attempt to mark another user's notification as read (should fail)
+PUT {{baseUrl}}/999/read
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (404 Not Found):
+# {
+#   "timestamp": "2024-01-15T15:00:00",
+#   "status": 404,
+#   "error": "Not Found",
+#   "message": "Notification not found",
+#   "path": "/api/notifications/999/read"
+# }
+
+### 8. Create notification (internal endpoint - typically called by other services)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": 1,
+  "type": "LIKE",
+  "actorId": 2,
+  "entityId": 10,
+  "message": "janesmith liked your post"
+}
+
+### Expected Response (201 Created):
+# {
+#   "id": 6,
+#   "userId": 1,
+#   "type": "LIKE",
+#   "actorId": 2,
+#   "actorUsername": "janesmith",
+#   "actorAvatarUrl": "https://example.com/avatars/janesmith.jpg",
+#   "entityId": 10,
+#   "message": "janesmith liked your post",
+#   "read": false,
+#   "createdAt": "2024-01-15T15:30:00"
+# }
+
+### 9. Get unread notifications with custom page size
+GET {{baseUrl}}/unread?page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns up to 20 unread notifications
+
+### 10. Get notifications without authentication (should fail)
+GET {{baseUrl}}?page=0&size=10
+
+### Expected Response (401 Unauthorized):
+# {
+#   "timestamp": "2024-01-15T15:35:00",
+#   "status": 401,
+#   "error": "Unauthorized",
+#   "message": "Authentication required",
+#   "path": "/api/notifications"
+# }
+
+### Notes:
+# - Notifications are ordered in reverse chronological order (newest first)
+# - Notification types: LIKE, COMMENT, FOLLOW
+# - Self-actions (liking your own post, etc.) do not create notifications
+# - New notifications are unread by default
+# - entityId is null for FOLLOW notifications, otherwise contains the post ID
+# - The create endpoint is typically used internally by other services

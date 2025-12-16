@@ -10,3 +10,8 @@ sdk.dir=YOUR_SDK_PATH_HERE
 # API Keys - Replace with your actual keys
 GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
+
+# Backend API Configuration
+# For Android Emulator, use 10.0.2.2 to access host machine's localhost
+# For physical device, replace with your computer's IP address (e.g., 192.168.1.100:8080/api)
+BACKEND_BASE_URL=http://10.0.2.2:8080/api

@@ -1,0 +1,380 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Databases
+  auth-db:
+    image: postgres:16-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-db:
+    image: postgres:16-alpine
+    container_name: user-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  follow-db:
+    image: postgres:16-alpine
+    container_name: follow-db
+    environment:
+      POSTGRES_DB: follow_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - follow-db-data:/var/lib/postgresql/data
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  post-db:
+    image: postgres:16-alpine
+    container_name: post-db
+    environment:
+      POSTGRES_DB: post_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - post-db-data:/var/lib/postgresql/data
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  comment-db:
+    image: postgres:16-alpine
+    container_name: comment-db
+    environment:
+      POSTGRES_DB: comment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - comment-db-data:/var/lib/postgresql/data
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  like-db:
+    image: postgres:16-alpine
+    container_name: like-db
+    environment:
+      POSTGRES_DB: like_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - like-db-data:/var/lib/postgresql/data
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification-db:
+    image: postgres:16-alpine
+    container_name: notification-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Microservices
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8082
+    ports:
+      - "8082:8082"
+    depends_on:
+      user-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  follow-service:
+    build:
+      context: .
+      dockerfile: follow-service/Dockerfile
+    container_name: follow-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://follow-db:5432/follow_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8083
+    ports:
+      - "8083:8083"
+    depends_on:
+      follow-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  post-service:
+    build:
+      context: .
+      dockerfile: post-service/Dockerfile
+    container_name: post-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://post-db:5432/post_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8084
+    ports:
+      - "8084:8084"
+    depends_on:
+      post-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  comment-service:
+    build:
+      context: .
+      dockerfile: comment-service/Dockerfile
+    container_name: comment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://comment-db:5432/comment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8085
+    ports:
+      - "8085:8085"
+    depends_on:
+      comment-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  like-service:
+    build:
+      context: .
+      dockerfile: like-service/Dockerfile
+    container_name: like-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://like-db:5432/like_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8086
+    ports:
+      - "8086:8086"
+    depends_on:
+      like-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  media-service:
+    build:
+      context: .
+      dockerfile: media-service/Dockerfile
+    container_name: media-service
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8087
+      GCS_PROJECT_ID: agrohub-481313
+      GCS_BUCKET_NAME: agro-photo-bucket
+      GCS_CREDENTIALS_PATH: /app/credentials/agro-service.json
+    ports:
+      - "8087:8087"
+    volumes:
+      - ./agro-service.json:/app/credentials/agro-service.json:ro
+    depends_on:
+      - auth-service
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  feed-service:
+    build:
+      context: .
+      dockerfile: feed-service/Dockerfile
+    container_name: feed-service
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8089
+      FOLLOW_SERVICE_URL: http://follow-service:8083
+      POST_SERVICE_URL: http://post-service:8084
+      LIKE_SERVICE_URL: http://like-service:8086
+      COMMENT_SERVICE_URL: http://comment-service:8085
+    ports:
+      - "8089:8089"
+    depends_on:
+      - auth-service
+      - follow-service
+      - post-service
+      - like-service
+      - comment-service
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://notification-db:5432/notification_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8090
+    ports:
+      - "8090:8090"
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment-for-security}
+      SERVER_PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:8081
+      USER_SERVICE_URL: http://user-service:8082
+      FOLLOW_SERVICE_URL: http://follow-service:8083
+      POST_SERVICE_URL: http://post-service:8084
+      COMMENT_SERVICE_URL: http://comment-service:8085
+      LIKE_SERVICE_URL: http://like-service:8086
+      MEDIA_SERVICE_URL: http://media-service:8087
+      FEED_SERVICE_URL: http://feed-service:8089
+      NOTIFICATION_SERVICE_URL: http://notification-service:8090
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - user-service
+      - follow-service
+      - post-service
+      - comment-service
+      - like-service
+      - media-service
+      - feed-service
+      - notification-service
+    networks:
+      - social-media-network
+    restart: unless-stopped
+
+networks:
+  social-media-network:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  user-db-data:
+  follow-db-data:
+  post-db-data:
+  comment-db-data:
+  like-db-data:
+  notification-db-data:

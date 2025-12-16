@@ -16,9 +16,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.agrohub.data.MockDataProvider
+import com.example.agrohub.data.remote.NetworkModule
+import com.example.agrohub.data.repository.CommentRepositoryImpl
+import com.example.agrohub.data.repository.FeedRepositoryImpl
+import com.example.agrohub.data.repository.LikeRepositoryImpl
+import com.example.agrohub.data.repository.PostRepositoryImpl
+import com.example.agrohub.presentation.feed.FeedViewModel
+import com.example.agrohub.presentation.post.PostViewModel
 import com.example.agrohub.ui.icons.AgroHubIcons
 import com.example.agrohub.ui.navigation.Routes
 import com.example.agrohub.ui.screens.community.CommunityScreen
@@ -42,6 +50,28 @@ import com.example.agrohub.ui.theme.AgroHubTypography
 fun HomeScreen(navController: NavController) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Home", "Community")
+    val context = LocalContext.current
+    
+    // Create ViewModels for Community tab
+    val feedViewModel = remember {
+        val feedRepository = FeedRepositoryImpl(
+            NetworkModule.provideFeedApiService(context)
+        )
+        val likeRepository = LikeRepositoryImpl(
+            NetworkModule.provideLikeApiService(context)
+        )
+        FeedViewModel(feedRepository, likeRepository)
+    }
+    
+    val postViewModel = remember {
+        val postRepository = PostRepositoryImpl(
+            NetworkModule.providePostApiService(context)
+        )
+        val commentRepository = CommentRepositoryImpl(
+            NetworkModule.provideCommentApiService(context)
+        )
+        PostViewModel(postRepository, commentRepository)
+    }
     
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -78,7 +108,11 @@ fun HomeScreen(navController: NavController) {
             // Tab Content
             when (selectedTabIndex) {
                 0 -> HomeTabContent(navController = navController)
-                1 -> CommunityScreen(navController = navController)
+                1 -> CommunityScreen(
+                    navController = navController,
+                    feedViewModel = feedViewModel,
+                    postViewModel = postViewModel
+                )
             }
         }
         

@@ -100,6 +100,11 @@ object AgroHubIcons {
      */
     val Wind: ImageVector = Icons.Filled.Air
     
+    /**
+     * Alert icon - represents weather alerts and warnings
+     */
+    val Alert: ImageVector = Icons.Filled.Warning
+    
     // ========== Navigation Icons ==========
     
     /**
@@ -165,9 +170,14 @@ object AgroHubIcons {
     val Share: ImageVector = Icons.Filled.Share
     
     /**
-     * Like icon - represents liking/favoriting
+     * Like icon - represents liking/favoriting (outlined)
      */
-    val Like: ImageVector = Icons.Filled.Favorite
+    val Like: ImageVector = Icons.Outlined.FavoriteBorder
+    
+    /**
+     * Favorite icon - represents liked/favorited (filled)
+     */
+    val Favorite: ImageVector = Icons.Filled.Favorite
     
     /**
      * Comment icon - represents comments
@@ -223,6 +233,36 @@ object AgroHubIcons {
      * Back icon - represents back navigation
      */
     val Back: ImageVector = Icons.AutoMirrored.Filled.ArrowBack
+    
+    /**
+     * Arrow back icon - represents back navigation
+     */
+    val ArrowBack: ImageVector = Icons.AutoMirrored.Filled.ArrowBack
+    
+    /**
+     * More vertical icon - represents more options menu
+     */
+    val MoreVert: ImageVector = Icons.Filled.MoreVert
+    
+    /**
+     * People icon - represents community/users
+     */
+    val People: ImageVector = Icons.Filled.People
+    
+    /**
+     * Error icon - represents errors
+     */
+    val Error: ImageVector = Icons.Filled.Error
+    
+    /**
+     * Check circle icon - represents success/completion
+     */
+    val CheckCircle: ImageVector = Icons.Filled.CheckCircle
+    
+    /**
+     * Upload icon - represents file upload
+     */
+    val Upload: ImageVector = Icons.Filled.Upload
     
     /**
      * Forward icon - represents forward navigation

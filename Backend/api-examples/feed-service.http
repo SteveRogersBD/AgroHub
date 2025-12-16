@@ -1,0 +1,161 @@
+### Feed Service API Examples
+### Base URL: http://localhost:8087/api/feed (direct) or http://localhost:8080/api/feed (via gateway)
+
+### Variables
+@baseUrl = http://localhost:8080/api/feed
+@accessToken = YOUR_JWT_TOKEN_HERE
+
+### 1. Get personalized feed (first page)
+GET {{baseUrl}}?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [
+#     {
+#       "id": 5,
+#       "userId": 2,
+#       "username": "janesmith",
+#       "userAvatarUrl": "https://example.com/avatars/janesmith.jpg",
+#       "content": "Just finished reading a great book on distributed systems!",
+#       "mediaUrl": null,
+#       "likeCount": 12,
+#       "commentCount": 3,
+#       "likedByCurrentUser": true,
+#       "createdAt": "2024-01-15T14:30:00",
+#       "updatedAt": "2024-01-15T14:30:00"
+#     },
+#     {
+#       "id": 4,
+#       "userId": 3,
+#       "username": "bobwilson",
+#       "userAvatarUrl": "https://example.com/avatars/bobwilson.jpg",
+#       "content": "Beautiful morning hike! 🏔️",
+#       "mediaUrl": "https://example.com/images/hike.jpg",
+#       "likeCount": 25,
+#       "commentCount": 7,
+#       "likedByCurrentUser": false,
+#       "createdAt": "2024-01-15T08:15:00",
+#       "updatedAt": "2024-01-15T08:15:00"
+#     },
+#     {
+#       "id": 3,
+#       "userId": 2,
+#       "username": "janesmith",
+#       "userAvatarUrl": "https://example.com/avatars/janesmith.jpg",
+#       "content": "Working on a new project with Spring Boot and PostgreSQL",
+#       "mediaUrl": null,
+#       "likeCount": 8,
+#       "commentCount": 2,
+#       "likedByCurrentUser": true,
+#       "createdAt": "2024-01-14T16:45:00",
+#       "updatedAt": "2024-01-14T16:45:00"
+#     }
+#   ],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 3,
+#   "totalPages": 1,
+#   "last": true
+# }
+
+### 2. Get feed with smaller page size
+GET {{baseUrl}}?page=0&size=5
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns first 5 posts from followed users
+
+### 3. Get second page of feed
+GET {{baseUrl}}?page=1&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns next 10 posts (if available)
+
+### 4. Get feed when not following anyone
+GET {{baseUrl}}?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 0,
+#   "totalPages": 0,
+#   "last": true
+# }
+
+### 5. Get feed with custom page size
+GET {{baseUrl}}?page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns up to 20 posts from followed users
+
+### 6. Get feed without authentication (should fail)
+GET {{baseUrl}}?page=0&size=10
+
+### Expected Response (401 Unauthorized):
+# {
+#   "timestamp": "2024-01-15T10:30:00",
+#   "status": 401,
+#   "error": "Unauthorized",
+#   "message": "Authentication required",
+#   "path": "/api/feed"
+# }
+
+### 7. Get feed with invalid page number (negative)
+GET {{baseUrl}}?page=-1&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T10:35:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Page number must be non-negative",
+#   "path": "/api/feed"
+# }
+
+### 8. Get feed with invalid page size (zero)
+GET {{baseUrl}}?page=0&size=0
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T10:40:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Page size must be positive",
+#   "path": "/api/feed"
+# }
+
+### 9. Get feed with very large page size
+GET {{baseUrl}}?page=0&size=1000
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns all available posts (up to 1000)
+
+### 10. Get feed - default parameters
+GET {{baseUrl}}
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns first page with default size (usually 10 or 20)
+
+### Notes:
+# - Feed contains only posts from users you follow
+# - Posts are ordered in reverse chronological order (newest first)
+# - Soft-deleted posts are excluded from the feed
+# - Each post includes enriched metadata:
+#   - likeCount: Total number of likes on the post
+#   - commentCount: Total number of comments on the post
+#   - likedByCurrentUser: Whether the authenticated user has liked this post
+# - Feed is personalized based on the authenticated user's following list

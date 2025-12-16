@@ -1,0 +1,162 @@
+### Auth Service API Examples
+### Base URL: http://localhost:8081/api/auth (direct) or http://localhost:8080/api/auth (via gateway)
+
+### Variables
+@baseUrl = http://localhost:8080/api/auth
+@authBaseUrl = http://localhost:8081/api/auth
+
+### 1. Register a new user
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "username": "johndoe",
+  "password": "SecurePass123!"
+}
+
+### Expected Response (201 Created):
+# {
+#   "id": 1,
+#   "email": "john.doe@example.com",
+#   "username": "johndoe",
+#   "role": "USER",
+#   "createdAt": "2024-01-15T10:30:00"
+# }
+
+### 2. Register another user for testing
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "jane.smith@example.com",
+  "username": "janesmith",
+  "password": "AnotherPass456!"
+}
+
+### 3. Login with valid credentials
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "SecurePass123!"
+}
+
+### Expected Response (200 OK):
+# {
+#   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "tokenType": "Bearer",
+#   "expiresIn": 3600,
+#   "userId": 1,
+#   "username": "johndoe",
+#   "email": "john.doe@example.com"
+# }
+
+### 4. Login with invalid credentials (should fail)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "WrongPassword"
+}
+
+### Expected Response (401 Unauthorized):
+# {
+#   "timestamp": "2024-01-15T10:35:00",
+#   "status": 401,
+#   "error": "Unauthorized",
+#   "message": "Invalid credentials",
+#   "path": "/api/auth/login"
+# }
+
+### 5. Refresh access token
+# Replace {{refreshToken}} with the refresh token from login response
+POST {{baseUrl}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Expected Response (200 OK):
+# {
+#   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "tokenType": "Bearer",
+#   "expiresIn": 3600
+# }
+
+### 6. Validate JWT token (internal endpoint)
+POST {{authBaseUrl}}/validate
+Content-Type: application/json
+
+{
+  "token": "{{accessToken}}"
+}
+
+### Expected Response (200 OK):
+# {
+#   "valid": true,
+#   "userId": 1,
+#   "username": "johndoe",
+#   "roles": ["USER"]
+# }
+
+### 7. Register with duplicate email (should fail)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "username": "anotherjohn",
+  "password": "SecurePass123!"
+}
+
+### Expected Response (409 Conflict):
+# {
+#   "timestamp": "2024-01-15T10:40:00",
+#   "status": 409,
+#   "error": "Conflict",
+#   "message": "Email already exists",
+#   "path": "/api/auth/register"
+# }
+
+### 8. Register with invalid email format (should fail)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "username": "testuser",
+  "password": "SecurePass123!"
+}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T10:45:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Invalid email format",
+#   "path": "/api/auth/register"
+# }
+
+### 9. Register with short password (should fail)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "username": "testuser",
+  "password": "short"
+}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T10:50:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Password must be at least 8 characters",
+#   "path": "/api/auth/register"
+# }

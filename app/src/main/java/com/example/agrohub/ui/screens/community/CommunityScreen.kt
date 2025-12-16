@@ -2,11 +2,10 @@ package com.example.agrohub.ui.screens.community
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -15,35 +14,48 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.agrohub.data.MockDataProvider
-import com.example.agrohub.models.Comment
-import com.example.agrohub.models.Post
+import coil.compose.AsyncImage
+import com.example.agrohub.domain.model.FeedPost
+import com.example.agrohub.domain.model.Comment
+import com.example.agrohub.domain.util.UiState
+import com.example.agrohub.presentation.feed.FeedViewModel
+import com.example.agrohub.presentation.post.PostViewModel
 import com.example.agrohub.ui.components.buttons.AgroHubFAB
 import com.example.agrohub.ui.icons.AgroHubIcons
+import com.example.agrohub.ui.navigation.Routes
 import com.example.agrohub.ui.theme.AgroHubColors
 import com.example.agrohub.ui.theme.AgroHubSpacing
+import java.time.format.DateTimeFormatter
 
 /**
  * Community Screen - Social feed for farmer interactions
  * 
  * Features:
- * - Scrollable feed with posts
+ * - Scrollable feed with posts from followed users
  * - Post cards with user info, content, images
  * - Like, comment, share interactions
  * - Comment sections with nested threads
- * - Create post FAB
- * - Staggered animations
+ * - Create post button
+ * - Real-time data from backend APIs
  * 
  * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6
  */
 @Composable
-fun CommunityScreen(navController: NavController) {
-    val posts = remember { MockDataProvider.generateCommunityPosts() }
-    var expandedPostId by remember { mutableStateOf<String?>(null) }
+fun CommunityScreen(
+    navController: NavController,
+    feedViewModel: FeedViewModel,
+    postViewModel: PostViewModel
+) {
+    val feedState by feedViewModel.feedState.collectAsState()
+    var expandedPostId by remember { mutableStateOf<Long?>(null) }
+    
+    // Load feed on first composition
+    LaunchedEffect(Unit) {
+        feedViewModel.loadFeed()
+    }
     
     Box(
         modifier = Modifier
@@ -53,37 +65,61 @@ fun CommunityScreen(navController: NavController) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Header
-            CommunityHeader()
+            // Header with Create Post Button
+            CommunityHeader(
+                onCreatePostClick = { navController.navigate(Routes.CreatePost.route) }
+            )
             
             // Community Feed
-            CommunityFeed(
-                posts = posts,
-                expandedPostId = expandedPostId,
-                onPostExpand = { postId ->
-                    expandedPostId = if (expandedPostId == postId) null else postId
-                },
-                modifier = Modifier.weight(1f)
-            )
+            when (val state = feedState) {
+                is UiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = AgroHubColors.DeepGreen)
+                    }
+                }
+                is UiState.Success -> {
+                    val posts = state.data.items
+                    if (posts.isEmpty()) {
+                        EmptyFeedMessage()
+                    } else {
+                        CommunityFeed(
+                            posts = posts,
+                            expandedPostId = expandedPostId,
+                            onPostExpand = { postId ->
+                                expandedPostId = if (expandedPostId == postId) null else postId
+                            },
+                            onLike = { postId -> feedViewModel.toggleLike(postId) },
+                            onComment = { postId -> expandedPostId = postId },
+                            onLoadComments = { postId -> postViewModel.loadComments(postId) },
+                            postViewModel = postViewModel,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                is UiState.Error -> {
+                    ErrorMessage(
+                        message = state.message ?: "Failed to load feed",
+                        onRetry = { feedViewModel.loadFeed() }
+                    )
+                }
+                is UiState.Idle -> {
+                    // Initial state, loading will be triggered by LaunchedEffect
+                }
+            }
         }
-        
-        // Create Post FAB
-        CreatePostFAB(
-            onClick = { /* Handle create post */ },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(AgroHubSpacing.md)
-        )
     }
 }
 
 /**
- * Community Header
+ * Community Header with Create Post Button
  * Requirements: 6.1
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommunityHeader() {
+fun CommunityHeader(onCreatePostClick: () -> Unit) {
     TopAppBar(
         title = {
             Text(
@@ -97,10 +133,10 @@ fun CommunityHeader() {
             containerColor = AgroHubColors.White
         ),
         actions = {
-            IconButton(onClick = { /* Handle search */ }) {
+            IconButton(onClick = onCreatePostClick) {
                 Icon(
-                    imageVector = AgroHubIcons.Search,
-                    contentDescription = "Search",
+                    imageVector = AgroHubIcons.Add,
+                    contentDescription = "Create Post",
                     tint = AgroHubColors.DeepGreen
                 )
             }
@@ -114,24 +150,32 @@ fun CommunityHeader() {
  */
 @Composable
 fun CommunityFeed(
-    posts: List<Post>,
-    expandedPostId: String?,
-    onPostExpand: (String) -> Unit,
+    posts: List<FeedPost>,
+    expandedPostId: Long?,
+    onPostExpand: (Long) -> Unit,
+    onLike: (Long) -> Unit,
+    onComment: (Long) -> Unit,
+    onLoadComments: (Long) -> Unit,
+    postViewModel: PostViewModel,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = AgroHubSpacing.sm)
     ) {
-        itemsIndexed(posts) { index, post ->
-            // Staggered animation for feed items
-            val animationDelay = (index * 50).coerceAtMost(300)
-            
-            AnimatedPostCard(
+        items(posts, key = { it.id }) { post ->
+            FeedPostCard(
                 post = post,
                 isExpanded = expandedPostId == post.id,
-                onExpand = { onPostExpand(post.id) },
-                animationDelay = animationDelay,
+                onExpand = {
+                    onPostExpand(post.id)
+                    if (expandedPostId != post.id) {
+                        onLoadComments(post.id)
+                    }
+                },
+                onLike = { onLike(post.id) },
+                onComment = { onComment(post.id) },
+                postViewModel = postViewModel,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
@@ -144,65 +188,21 @@ fun CommunityFeed(
 }
 
 /**
- * Animated Post Card wrapper with staggered animation
- * Requirements: 6.5
+ * Feed Post Card - Individual post with user info, content, images, and interactions
+ * Requirements: 6.1, 6.2, 6.3, 6.4
  */
 @Composable
-fun AnimatedPostCard(
-    post: Post,
-    isExpanded: Boolean,
-    onExpand: () -> Unit,
-    animationDelay: Int,
-    modifier: Modifier = Modifier
-) {
-    var visible by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(animationDelay.toLong())
-        visible = true
-    }
-    
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(
-            animationSpec = tween(
-                durationMillis = 300,
-                easing = FastOutSlowInEasing
-            )
-        ) + slideInVertically(
-            animationSpec = tween(
-                durationMillis = 300,
-                easing = FastOutSlowInEasing
-            ),
-            initialOffsetY = { it / 4 }
-        )
-    ) {
-        PostCard(
-            post = post,
-            isExpanded = isExpanded,
-            onExpand = onExpand,
-            onLike = { /* Handle like */ },
-            onComment = { /* Handle comment */ },
-            onShare = { /* Handle share */ },
-            modifier = modifier
-        )
-    }
-}
-
-/**
- * Post Card - Individual post with user info, content, images, and interactions
- * Requirements: 6.1, 6.2, 6.3
- */
-@Composable
-fun PostCard(
-    post: Post,
+fun FeedPostCard(
+    post: FeedPost,
     isExpanded: Boolean,
     onExpand: () -> Unit,
     onLike: () -> Unit,
     onComment: () -> Unit,
-    onShare: () -> Unit,
+    postViewModel: PostViewModel,
     modifier: Modifier = Modifier
 ) {
+    val commentsState by postViewModel.commentsState.collectAsState()
+    
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(AgroHubSpacing.md),
@@ -220,9 +220,9 @@ fun PostCard(
         ) {
             // User Info Header
             PostHeader(
-                userName = post.userName,
-                userAvatar = post.userAvatar,
-                timestamp = post.timestamp
+                username = post.author.username,
+                avatarUrl = post.author.avatarUrl,
+                timestamp = formatTimestamp(post.createdAt)
             )
             
             Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
@@ -234,20 +234,29 @@ fun PostCard(
                 color = AgroHubColors.TextPrimary
             )
             
-            // Post Images (if any)
-            if (post.images.isNotEmpty()) {
+            // Post Image (if any)
+            if (post.mediaUrl != null) {
                 Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
-                PostImages(images = post.images)
+                AsyncImage(
+                    model = post.mediaUrl,
+                    contentDescription = "Post image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(AgroHubSpacing.sm)),
+                    contentScale = ContentScale.Crop
+                )
             }
             
             Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
             
             // Interaction Buttons
             PostInteractionButtons(
-                post = post,
+                likeCount = post.likeCount,
+                commentCount = post.commentCount,
+                isLiked = post.isLikedByCurrentUser,
                 onLike = onLike,
-                onComment = onComment,
-                onShare = onShare
+                onComment = onComment
             )
             
             // Comments Section (if expanded)
@@ -255,21 +264,53 @@ fun PostCard(
                 Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
                 Divider(color = AgroHubColors.SurfaceLight)
                 Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
-                CommentSection(
-                    comments = MockDataProvider.generateComments(),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                
+                when (commentsState) {
+                    is UiState.Loading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(AgroHubSpacing.md),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = AgroHubColors.DeepGreen,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    is UiState.Success -> {
+                        val comments = (commentsState as UiState.Success).data.items
+                        CommentSection(
+                            comments = comments,
+                            postId = post.id,
+                            postViewModel = postViewModel,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    is UiState.Error -> {
+                        Text(
+                            text = "Failed to load comments",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(AgroHubSpacing.md)
+                        )
+                    }
+                    is UiState.Idle -> {
+                        // Initial state
+                    }
+                }
             }
             
             // View Comments Button
-            if (!isExpanded && post.comments > 0) {
+            if (!isExpanded && post.commentCount > 0) {
                 Spacer(modifier = Modifier.height(AgroHubSpacing.xs))
                 TextButton(
                     onClick = onExpand,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "View all ${post.comments} comments",
+                        text = "View all ${post.commentCount} comments",
                         style = MaterialTheme.typography.bodyMedium,
                         color = AgroHubColors.DeepGreen
                     )
@@ -280,13 +321,102 @@ fun PostCard(
 }
 
 /**
+ * Empty Feed Message
+ */
+@Composable
+fun EmptyFeedMessage() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = AgroHubIcons.People,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = AgroHubColors.TextHint
+            )
+            Spacer(modifier = Modifier.height(AgroHubSpacing.md))
+            Text(
+                text = "No posts yet",
+                style = MaterialTheme.typography.titleLarge,
+                color = AgroHubColors.TextSecondary
+            )
+            Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
+            Text(
+                text = "Follow users to see their posts here",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AgroHubColors.TextHint
+            )
+        }
+    }
+}
+
+/**
+ * Error Message with Retry
+ */
+@Composable
+fun ErrorMessage(message: String, onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = AgroHubIcons.Error,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(AgroHubSpacing.md))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(AgroHubSpacing.md))
+            Button(
+                onClick = onRetry,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AgroHubColors.DeepGreen
+                )
+            ) {
+                Text("Retry")
+            }
+        }
+    }
+}
+
+/**
+ * Format timestamp for display
+ */
+fun formatTimestamp(dateTime: java.time.LocalDateTime): String {
+    val now = java.time.LocalDateTime.now()
+    val duration = java.time.Duration.between(dateTime, now)
+    
+    return when {
+        duration.toMinutes() < 1 -> "Just now"
+        duration.toMinutes() < 60 -> "${duration.toMinutes()}m ago"
+        duration.toHours() < 24 -> "${duration.toHours()}h ago"
+        duration.toDays() < 7 -> "${duration.toDays()}d ago"
+        else -> dateTime.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+    }
+}
+
+/**
  * Post Header - User avatar, name, and timestamp
  * Requirements: 6.1
  */
 @Composable
 fun PostHeader(
-    userName: String,
-    userAvatar: Int,
+    username: String,
+    avatarUrl: String?,
     timestamp: String
 ) {
     Row(
@@ -294,22 +424,39 @@ fun PostHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // User Avatar
-        Image(
-            painter = painterResource(id = userAvatar),
-            contentDescription = "User avatar",
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(AgroHubColors.LightGreen),
-            contentScale = ContentScale.Crop
-        )
+        if (avatarUrl != null) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = "User avatar",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(AgroHubColors.LightGreen),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(AgroHubColors.LightGreen),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = username.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AgroHubColors.White
+                )
+            }
+        }
         
         Spacer(modifier = Modifier.width(AgroHubSpacing.sm))
         
         // User Name and Timestamp
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = userName,
+                text = username,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AgroHubColors.TextPrimary
@@ -324,7 +471,7 @@ fun PostHeader(
         // More Options
         IconButton(onClick = { /* Handle more options */ }) {
             Icon(
-                imageVector = AgroHubIcons.Settings,
+                imageVector = AgroHubIcons.MoreVert,
                 contentDescription = "More options",
                 tint = AgroHubColors.TextSecondary
             )
@@ -332,118 +479,19 @@ fun PostHeader(
     }
 }
 
-/**
- * Post Images - Display images with proper aspect ratios and rounded corners
- * Requirements: 6.2
- */
-@Composable
-fun PostImages(images: List<Int>) {
-    when (images.size) {
-        1 -> {
-            // Single image - full width
-            Image(
-                painter = painterResource(id = images[0]),
-                contentDescription = "Post image",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(AgroHubSpacing.sm)),
-                contentScale = ContentScale.Crop
-            )
-        }
-        2 -> {
-            // Two images - side by side
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AgroHubSpacing.xs)
-            ) {
-                images.forEach { imageRes ->
-                    Image(
-                        painter = painterResource(id = imageRes),
-                        contentDescription = "Post image",
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(150.dp)
-                            .clip(RoundedCornerShape(AgroHubSpacing.sm)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-        }
-        else -> {
-            // Three or more images - grid layout
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(AgroHubSpacing.xs)
-            ) {
-                // First image full width
-                Image(
-                    painter = painterResource(id = images[0]),
-                    contentDescription = "Post image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp)
-                        .clip(RoundedCornerShape(AgroHubSpacing.sm)),
-                    contentScale = ContentScale.Crop
-                )
-                
-                // Remaining images in a row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AgroHubSpacing.xs)
-                ) {
-                    images.drop(1).take(2).forEach { imageRes ->
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(100.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = imageRes),
-                                contentDescription = "Post image",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(AgroHubSpacing.sm)),
-                                contentScale = ContentScale.Crop
-                            )
-                            
-                            // Show "+N more" overlay if there are more images
-                            if (images.size > 3 && imageRes == images[2]) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            color = AgroHubColors.CharcoalText.copy(alpha = 0.6f),
-                                            shape = RoundedCornerShape(AgroHubSpacing.sm)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "+${images.size - 3}",
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = AgroHubColors.White
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+
 
 /**
- * Post Interaction Buttons - Like, comment, share with icons and counts
+ * Post Interaction Buttons - Like and comment with icons and counts
  * Requirements: 6.3
  */
 @Composable
 fun PostInteractionButtons(
-    post: Post,
+    likeCount: Int,
+    commentCount: Int,
+    isLiked: Boolean,
     onLike: () -> Unit,
-    onComment: () -> Unit,
-    onShare: () -> Unit
+    onComment: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -451,10 +499,10 @@ fun PostInteractionButtons(
     ) {
         // Like Button
         InteractionButton(
-            icon = AgroHubIcons.Like,
-            count = post.likes,
+            icon = if (isLiked) AgroHubIcons.Favorite else AgroHubIcons.Like,
+            count = likeCount,
             label = "Like",
-            isActive = post.isLiked,
+            isActive = isLiked,
             onClick = onLike,
             modifier = Modifier.weight(1f)
         )
@@ -462,20 +510,10 @@ fun PostInteractionButtons(
         // Comment Button
         InteractionButton(
             icon = AgroHubIcons.Comment,
-            count = post.comments,
+            count = commentCount,
             label = "Comment",
             isActive = false,
             onClick = onComment,
-            modifier = Modifier.weight(1f)
-        )
-        
-        // Share Button
-        InteractionButton(
-            icon = AgroHubIcons.Share,
-            count = post.shares,
-            label = "Share",
-            isActive = false,
-            onClick = onShare,
             modifier = Modifier.weight(1f)
         )
     }
@@ -527,6 +565,8 @@ fun InteractionButton(
 @Composable
 fun CommentSection(
     comments: List<Comment>,
+    postId: Long,
+    postViewModel: PostViewModel,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -539,13 +579,27 @@ fun CommentSection(
         
         Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
         
-        comments.forEach { comment ->
-            CommentItem(comment = comment)
-            Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
+        if (comments.isEmpty()) {
+            Text(
+                text = "No comments yet. Be the first to comment!",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AgroHubColors.TextHint,
+                modifier = Modifier.padding(vertical = AgroHubSpacing.md)
+            )
+        } else {
+            comments.forEach { comment ->
+                CommentItem(comment = comment)
+                Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
+            }
         }
         
         // Add Comment Input
-        AddCommentInput()
+        AddCommentInput(
+            postId = postId,
+            onAddComment = { content ->
+                postViewModel.addComment(postId, content)
+            }
+        )
     }
 }
 
@@ -559,15 +613,32 @@ fun CommentItem(comment: Comment) {
         modifier = Modifier.fillMaxWidth()
     ) {
         // User Avatar
-        Image(
-            painter = painterResource(id = comment.userAvatar),
-            contentDescription = "Commenter avatar",
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(AgroHubColors.LightGreen),
-            contentScale = ContentScale.Crop
-        )
+        if (comment.author.avatarUrl != null) {
+            AsyncImage(
+                model = comment.author.avatarUrl,
+                contentDescription = "Commenter avatar",
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(AgroHubColors.LightGreen),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(AgroHubColors.LightGreen),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = comment.author.username.take(1).uppercase(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AgroHubColors.White
+                )
+            }
+        }
         
         Spacer(modifier = Modifier.width(AgroHubSpacing.sm))
         
@@ -580,13 +651,13 @@ fun CommentItem(comment: Comment) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = comment.userName,
+                    text = comment.author.username,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = AgroHubColors.TextPrimary
                 )
                 Text(
-                    text = comment.timestamp,
+                    text = formatTimestamp(comment.createdAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = AgroHubColors.TextSecondary
                 )
@@ -600,42 +671,6 @@ fun CommentItem(comment: Comment) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = AgroHubColors.TextPrimary
             )
-            
-            Spacer(modifier = Modifier.height(AgroHubSpacing.xs))
-            
-            // Comment Actions
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(AgroHubSpacing.md)
-            ) {
-                TextButton(
-                    onClick = { /* Handle like comment */ },
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Icon(
-                        imageVector = AgroHubIcons.Like,
-                        contentDescription = "Like comment",
-                        modifier = Modifier.size(16.dp),
-                        tint = AgroHubColors.TextSecondary
-                    )
-                    Spacer(modifier = Modifier.width(AgroHubSpacing.xs))
-                    Text(
-                        text = comment.likes.toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AgroHubColors.TextSecondary
-                    )
-                }
-                
-                TextButton(
-                    onClick = { /* Handle reply */ },
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text(
-                        text = "Reply",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AgroHubColors.DeepGreen
-                    )
-                }
-            }
         }
     }
 }
@@ -645,7 +680,10 @@ fun CommentItem(comment: Comment) {
  * Requirements: 6.4
  */
 @Composable
-fun AddCommentInput() {
+fun AddCommentInput(
+    postId: Long,
+    onAddComment: (String) -> Unit
+) {
     var commentText by remember { mutableStateOf("") }
     
     Row(
@@ -680,7 +718,7 @@ fun AddCommentInput() {
         IconButton(
             onClick = {
                 if (commentText.isNotBlank()) {
-                    // Handle send comment
+                    onAddComment(commentText)
                     commentText = ""
                 }
             },
@@ -695,18 +733,4 @@ fun AddCommentInput() {
     }
 }
 
-/**
- * Create Post FAB - Floating action button for creating new posts
- * Requirements: 6.6
- */
-@Composable
-fun CreatePostFAB(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    AgroHubFAB(
-        icon = AgroHubIcons.Add,
-        onClick = onClick,
-        modifier = modifier
-    )
-}
+

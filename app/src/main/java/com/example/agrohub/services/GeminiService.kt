@@ -6,17 +6,18 @@ import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+
 /**
  * GeminiService - Service for interacting with Google Gemini AI
- * 
+ *
  * Provides agriculture-focused AI assistance using Gemini API
  */
 class GeminiService {
-    
+
     companion object {
         // API key loaded from local.properties via BuildConfig
         private val API_KEY = BuildConfig.GEMINI_API_KEY
-        
+
         // System prompt to make Gemini focus on agriculture
         private val SYSTEM_PROMPT = """
             You are an expert agricultural assistant helping farmers with their questions.
@@ -34,15 +35,15 @@ class GeminiService {
             If a question is not related to agriculture, politely redirect to farming topics.
         """.trimIndent()
     }
-    
+
     private val model = GenerativeModel(
         modelName = "gemini-2.0-flash",
         apiKey = API_KEY
     )
-    
+
     /**
      * Send a message to Gemini and get a response
-     * 
+     *
      * @param userMessage The user's question or message
      * @return AI-generated response focused on agriculture
      */
@@ -53,7 +54,7 @@ class GeminiService {
                     text(SYSTEM_PROMPT)
                     text("\n\nUser question: $userMessage")
                 }
-                
+
                 val response = model.generateContent(prompt)
                 response.text ?: "I'm sorry, I couldn't generate a response. Please try again."
             } catch (e: Exception) {
@@ -61,10 +62,10 @@ class GeminiService {
             }
         }
     }
-    
+
     /**
      * Send a message with conversation history for context-aware responses
-     * 
+     *
      * @param conversationHistory List of previous messages (user and bot)
      * @param newMessage The new user message
      * @return AI-generated response

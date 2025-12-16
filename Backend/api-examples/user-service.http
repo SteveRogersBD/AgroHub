@@ -1,0 +1,173 @@
+### User Service API Examples
+### Base URL: http://localhost:8082/api/users (direct) or http://localhost:8080/api/users (via gateway)
+
+### Variables
+@baseUrl = http://localhost:8080/api/users
+@accessToken = YOUR_JWT_TOKEN_HERE
+
+### 1. Create user profile
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "John Doe",
+  "bio": "Software developer passionate about microservices and cloud architecture",
+  "avatarUrl": "https://example.com/avatars/johndoe.jpg",
+  "location": "San Francisco, CA",
+  "website": "https://johndoe.dev"
+}
+
+### Expected Response (201 Created):
+# {
+#   "id": 1,
+#   "userId": 1,
+#   "name": "John Doe",
+#   "bio": "Software developer passionate about microservices and cloud architecture",
+#   "avatarUrl": "https://example.com/avatars/johndoe.jpg",
+#   "location": "San Francisco, CA",
+#   "website": "https://johndoe.dev",
+#   "createdAt": "2024-01-15T10:30:00",
+#   "updatedAt": "2024-01-15T10:30:00"
+# }
+
+### 2. Get current user profile
+GET {{baseUrl}}/me
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "userId": 1,
+#   "name": "John Doe",
+#   "bio": "Software developer passionate about microservices and cloud architecture",
+#   "avatarUrl": "https://example.com/avatars/johndoe.jpg",
+#   "location": "San Francisco, CA",
+#   "website": "https://johndoe.dev",
+#   "createdAt": "2024-01-15T10:30:00",
+#   "updatedAt": "2024-01-15T10:30:00"
+# }
+
+### 3. Get user profile by ID
+GET {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Same as above
+
+### 4. Get user profile by username
+GET {{baseUrl}}/username/johndoe
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Same as above
+
+### 5. Update user profile
+PUT {{baseUrl}}/1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "John Doe",
+  "bio": "Senior Software Engineer | Microservices Architect | Cloud Enthusiast",
+  "avatarUrl": "https://example.com/avatars/johndoe-new.jpg",
+  "location": "San Francisco, CA",
+  "website": "https://johndoe.dev"
+}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "userId": 1,
+#   "name": "John Doe",
+#   "bio": "Senior Software Engineer | Microservices Architect | Cloud Enthusiast",
+#   "avatarUrl": "https://example.com/avatars/johndoe-new.jpg",
+#   "location": "San Francisco, CA",
+#   "website": "https://johndoe.dev",
+#   "createdAt": "2024-01-15T10:30:00",
+#   "updatedAt": "2024-01-15T11:00:00"
+# }
+
+### 6. Search users by name
+GET {{baseUrl}}/search?query=John&page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [
+#     {
+#       "id": 1,
+#       "userId": 1,
+#       "name": "John Doe",
+#       "bio": "Senior Software Engineer | Microservices Architect | Cloud Enthusiast",
+#       "avatarUrl": "https://example.com/avatars/johndoe-new.jpg",
+#       "location": "San Francisco, CA",
+#       "website": "https://johndoe.dev"
+#     }
+#   ],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 1,
+#   "totalPages": 1,
+#   "last": true
+# }
+
+### 7. Search users with pagination
+GET {{baseUrl}}/search?query=&page=0&size=5
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns first 5 users
+
+### 8. Attempt to update another user's profile (should fail)
+PUT {{baseUrl}}/2
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Hacked Name",
+  "bio": "This should not work"
+}
+
+### Expected Response (403 Forbidden):
+# {
+#   "timestamp": "2024-01-15T11:10:00",
+#   "status": 403,
+#   "error": "Forbidden",
+#   "message": "You can only update your own profile",
+#   "path": "/api/users/2"
+# }
+
+### 9. Get non-existent user (should fail)
+GET {{baseUrl}}/99999
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (404 Not Found):
+# {
+#   "timestamp": "2024-01-15T11:15:00",
+#   "status": 404,
+#   "error": "Not Found",
+#   "message": "User profile not found",
+#   "path": "/api/users/99999"
+# }
+
+### 10. Create profile with invalid data (should fail)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "",
+  "bio": "Valid bio"
+}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T11:20:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Name is required",
+#   "path": "/api/users"
+# }

@@ -1,0 +1,164 @@
+### Follow Service API Examples
+### Base URL: http://localhost:8083/api/follows (direct) or http://localhost:8080/api/follows (via gateway)
+
+### Variables
+@baseUrl = http://localhost:8080/api/follows
+@accessToken = YOUR_JWT_TOKEN_HERE
+
+### 1. Follow a user
+POST {{baseUrl}}/2
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "followerId": 1,
+#   "followingId": 2,
+#   "createdAt": "2024-01-15T10:30:00"
+# }
+
+### 2. Follow another user
+POST {{baseUrl}}/3
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 2,
+#   "followerId": 1,
+#   "followingId": 3,
+#   "createdAt": "2024-01-15T10:31:00"
+# }
+
+### 3. Follow the same user again (idempotent - should not create duplicate)
+POST {{baseUrl}}/2
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "followerId": 1,
+#   "followingId": 2,
+#   "createdAt": "2024-01-15T10:30:00"
+# }
+
+### 4. Attempt to follow yourself (should fail)
+POST {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T10:35:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Cannot follow yourself",
+#   "path": "/api/follows/1"
+# }
+
+### 5. Unfollow a user
+DELETE {{baseUrl}}/2
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (204 No Content)
+
+### 6. Unfollow a user you're not following (idempotent - should not fail)
+DELETE {{baseUrl}}/99
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (204 No Content)
+
+### 7. Get followers of a user
+GET {{baseUrl}}/2/followers?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [
+#     {
+#       "id": 1,
+#       "followerId": 1,
+#       "followingId": 2,
+#       "followerUsername": "johndoe",
+#       "followerName": "John Doe",
+#       "followerAvatarUrl": "https://example.com/avatars/johndoe.jpg",
+#       "createdAt": "2024-01-15T10:30:00"
+#     }
+#   ],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 1,
+#   "totalPages": 1,
+#   "last": true
+# }
+
+### 8. Get users that a user is following
+GET {{baseUrl}}/1/following?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [
+#     {
+#       "id": 2,
+#       "followerId": 1,
+#       "followingId": 3,
+#       "followingUsername": "janesmith",
+#       "followingName": "Jane Smith",
+#       "followingAvatarUrl": "https://example.com/avatars/janesmith.jpg",
+#       "createdAt": "2024-01-15T10:31:00"
+#     }
+#   ],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 1,
+#   "totalPages": 1,
+#   "last": true
+# }
+
+### 9. Get follower/following statistics
+GET {{baseUrl}}/1/stats
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "userId": 1,
+#   "followerCount": 5,
+#   "followingCount": 3
+# }
+
+### 10. Check if current user follows another user
+GET {{baseUrl}}/check/2
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "userId": 2,
+#   "following": true
+# }
+
+### 11. Check if current user follows a user they don't follow
+GET {{baseUrl}}/check/99
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "userId": 99,
+#   "following": false
+# }
+
+### 12. Get followers with pagination (page 2)
+GET {{baseUrl}}/2/followers?page=1&size=5
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns second page of followers (if available)
+
+### 13. Get following list for current user
+GET {{baseUrl}}/me/following?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns list of users the current user follows

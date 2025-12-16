@@ -1,0 +1,340 @@
+### Complete Social Media Platform Workflow
+### This file demonstrates a complete user journey through the platform
+
+### Variables - Update these after each step
+@baseUrl = http://localhost:8080/api
+@user1Token = 
+@user2Token = 
+@user1Id = 
+@user2Id = 
+@postId = 
+
+### ============================================
+### STEP 1: User Registration and Authentication
+### ============================================
+
+### 1.1 Register User 1 (John)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "username": "johndoe",
+  "password": "SecurePass123!"
+}
+
+### Save the user ID from response as @user1Id
+
+### 1.2 Register User 2 (Jane)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "jane.smith@example.com",
+  "username": "janesmith",
+  "password": "AnotherPass456!"
+}
+
+### Save the user ID from response as @user2Id
+
+### 1.3 Login as User 1
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "SecurePass123!"
+}
+
+### Save the accessToken from response as @user1Token
+
+### 1.4 Login as User 2
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane.smith@example.com",
+  "password": "AnotherPass456!"
+}
+
+### Save the accessToken from response as @user2Token
+
+### ============================================
+### STEP 2: Create User Profiles
+### ============================================
+
+### 2.1 Create profile for User 1 (John)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{user1Token}}
+
+{
+  "name": "John Doe",
+  "bio": "Software developer passionate about microservices and cloud architecture",
+  "avatarUrl": "https://example.com/avatars/johndoe.jpg",
+  "location": "San Francisco, CA",
+  "website": "https://johndoe.dev"
+}
+
+### 2.2 Create profile for User 2 (Jane)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{user2Token}}
+
+{
+  "name": "Jane Smith",
+  "bio": "Full-stack developer | Tech enthusiast | Coffee lover ☕",
+  "avatarUrl": "https://example.com/avatars/janesmith.jpg",
+  "location": "New York, NY",
+  "website": "https://janesmith.io"
+}
+
+### ============================================
+### STEP 3: Follow Users
+### ============================================
+
+### 3.1 User 1 follows User 2
+POST {{baseUrl}}/follows/{{user2Id}}
+Authorization: Bearer {{user1Token}}
+
+### 3.2 User 2 follows User 1
+POST {{baseUrl}}/follows/{{user1Id}}
+Authorization: Bearer {{user2Token}}
+
+### 3.3 Check follower stats for User 1
+GET {{baseUrl}}/follows/{{user1Id}}/stats
+Authorization: Bearer {{user1Token}}
+
+### ============================================
+### STEP 4: Create Posts
+### ============================================
+
+### 4.1 User 2 creates a text post
+POST {{baseUrl}}/posts
+Content-Type: application/json
+Authorization: Bearer {{user2Token}}
+
+{
+  "content": "Just deployed my first microservices architecture! 🚀 Feeling accomplished.",
+  "mediaUrl": null
+}
+
+### Save the post ID from response as @postId
+
+### 4.2 User 2 creates a post with media
+POST {{baseUrl}}/posts
+Content-Type: application/json
+Authorization: Bearer {{user2Token}}
+
+{
+  "content": "Beautiful sunset at the beach today! 🌅",
+  "mediaUrl": "https://example.com/images/sunset-beach.jpg"
+}
+
+### 4.3 User 1 creates a post
+POST {{baseUrl}}/posts
+Content-Type: application/json
+Authorization: Bearer {{user1Token}}
+
+{
+  "content": "Learning about property-based testing with jqwik. Mind = blown! 🤯",
+  "mediaUrl": null
+}
+
+### ============================================
+### STEP 5: View Feed
+### ============================================
+
+### 5.1 User 1 views their personalized feed (should see User 2's posts)
+GET {{baseUrl}}/feed?page=0&size=10
+Authorization: Bearer {{user1Token}}
+
+### 5.2 User 2 views their personalized feed (should see User 1's posts)
+GET {{baseUrl}}/feed?page=0&size=10
+Authorization: Bearer {{user2Token}}
+
+### ============================================
+### STEP 6: Like Posts
+### ============================================
+
+### 6.1 User 1 likes User 2's post
+POST {{baseUrl}}/likes/{{postId}}
+Authorization: Bearer {{user1Token}}
+
+### 6.2 Check like count for the post
+GET {{baseUrl}}/likes/{{postId}}/count
+Authorization: Bearer {{user1Token}}
+
+### 6.3 Check if User 1 liked the post
+GET {{baseUrl}}/likes/{{postId}}/check
+Authorization: Bearer {{user1Token}}
+
+### ============================================
+### STEP 7: Comment on Posts
+### ============================================
+
+### 7.1 User 1 comments on User 2's post
+POST {{baseUrl}}/comments
+Content-Type: application/json
+Authorization: Bearer {{user1Token}}
+
+{
+  "postId": {{postId}},
+  "content": "Great post! I totally agree with your perspective. Congratulations! 🎉"
+}
+
+### 7.2 User 2 replies to the comment
+POST {{baseUrl}}/comments
+Content-Type: application/json
+Authorization: Bearer {{user2Token}}
+
+{
+  "postId": {{postId}},
+  "content": "Thanks John! It was a challenging but rewarding experience."
+}
+
+### 7.3 Get all comments for the post
+GET {{baseUrl}}/comments/post/{{postId}}?page=0&size=10
+Authorization: Bearer {{user1Token}}
+
+### ============================================
+### STEP 8: View Notifications
+### ============================================
+
+### 8.1 User 2 checks notifications (should see like and comment from User 1)
+GET {{baseUrl}}/notifications?page=0&size=10
+Authorization: Bearer {{user2Token}}
+
+### 8.2 User 2 checks unread notifications
+GET {{baseUrl}}/notifications/unread?page=0&size=10
+Authorization: Bearer {{user2Token}}
+
+### 8.3 User 2 marks a notification as read
+PUT {{baseUrl}}/notifications/1/read
+Authorization: Bearer {{user2Token}}
+
+### 8.4 User 2 marks all notifications as read
+PUT {{baseUrl}}/notifications/read-all
+Authorization: Bearer {{user2Token}}
+
+### ============================================
+### STEP 9: Search and Discovery
+### ============================================
+
+### 9.1 User 1 searches for users by name
+GET {{baseUrl}}/users/search?query=Jane&page=0&size=10
+Authorization: Bearer {{user1Token}}
+
+### 9.2 User 1 gets User 2's profile by username
+GET {{baseUrl}}/users/username/janesmith
+Authorization: Bearer {{user1Token}}
+
+### 9.3 User 1 views User 2's posts
+GET {{baseUrl}}/posts/user/{{user2Id}}?page=0&size=10
+Authorization: Bearer {{user1Token}}
+
+### ============================================
+### STEP 10: Update Content
+### ============================================
+
+### 10.1 User 2 updates their post
+PUT {{baseUrl}}/posts/{{postId}}
+Content-Type: application/json
+Authorization: Bearer {{user2Token}}
+
+{
+  "content": "Just deployed my first microservices architecture! 🚀 Feeling accomplished. Update: Now with CI/CD pipeline!",
+  "mediaUrl": null
+}
+
+### 10.2 User 1 updates their profile
+PUT {{baseUrl}}/users/{{user1Id}}
+Content-Type: application/json
+Authorization: Bearer {{user1Token}}
+
+{
+  "name": "John Doe",
+  "bio": "Senior Software Engineer | Microservices Architect | Cloud Enthusiast",
+  "avatarUrl": "https://example.com/avatars/johndoe-new.jpg",
+  "location": "San Francisco, CA",
+  "website": "https://johndoe.dev"
+}
+
+### ============================================
+### STEP 11: Unlike and Unfollow
+### ============================================
+
+### 11.1 User 1 unlikes the post
+DELETE {{baseUrl}}/likes/{{postId}}
+Authorization: Bearer {{user1Token}}
+
+### 11.2 User 1 unfollows User 2
+DELETE {{baseUrl}}/follows/{{user2Id}}
+Authorization: Bearer {{user1Token}}
+
+### 11.3 User 1 checks their feed (should be empty now)
+GET {{baseUrl}}/feed?page=0&size=10
+Authorization: Bearer {{user1Token}}
+
+### ============================================
+### STEP 12: Delete Content
+### ============================================
+
+### 12.1 User 1 deletes their comment
+DELETE {{baseUrl}}/comments/1
+Authorization: Bearer {{user1Token}}
+
+### 12.2 User 2 soft-deletes their post
+DELETE {{baseUrl}}/posts/{{postId}}
+Authorization: Bearer {{user2Token}}
+
+### 12.3 Try to get the deleted post (should fail)
+GET {{baseUrl}}/posts/{{postId}}
+Authorization: Bearer {{user2Token}}
+
+### ============================================
+### STEP 13: Token Refresh
+### ============================================
+
+### 13.1 Refresh User 1's access token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{user1RefreshToken}}"
+}
+
+### Update @user1Token with the new access token
+
+### ============================================
+### STEP 14: Batch Operations
+### ============================================
+
+### 14.1 Get like counts for multiple posts
+POST {{baseUrl}}/likes/batch/counts
+Content-Type: application/json
+Authorization: Bearer {{user1Token}}
+
+{
+  "postIds": [1, 2, 3, 4, 5]
+}
+
+### ============================================
+### STEP 15: View Relationships
+### ============================================
+
+### 15.1 Get User 2's followers
+GET {{baseUrl}}/follows/{{user2Id}}/followers?page=0&size=10
+Authorization: Bearer {{user2Token}}
+
+### 15.2 Get User 2's following list
+GET {{baseUrl}}/follows/{{user2Id}}/following?page=0&size=10
+Authorization: Bearer {{user2Token}}
+
+### 15.3 Check if User 1 follows User 2
+GET {{baseUrl}}/follows/check/{{user2Id}}
+Authorization: Bearer {{user1Token}}
+
+### ============================================
+### Complete! You've now tested the entire platform workflow.
+### ============================================

@@ -1,0 +1,218 @@
+### Post Service API Examples
+### Base URL: http://localhost:8084/api/posts (direct) or http://localhost:8080/api/posts (via gateway)
+
+### Variables
+@baseUrl = http://localhost:8080/api/posts
+@accessToken = YOUR_JWT_TOKEN_HERE
+
+### 1. Create a text-only post
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "content": "Just deployed my first microservices architecture! 🚀 Feeling accomplished.",
+  "mediaUrl": null
+}
+
+### Expected Response (201 Created):
+# {
+#   "id": 1,
+#   "userId": 1,
+#   "username": "johndoe",
+#   "content": "Just deployed my first microservices architecture! 🚀 Feeling accomplished.",
+#   "mediaUrl": null,
+#   "deleted": false,
+#   "createdAt": "2024-01-15T10:30:00",
+#   "updatedAt": "2024-01-15T10:30:00"
+# }
+
+### 2. Create a post with media
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "content": "Beautiful sunset at the beach today! 🌅",
+  "mediaUrl": "https://example.com/images/sunset-beach.jpg"
+}
+
+### Expected Response (201 Created):
+# {
+#   "id": 2,
+#   "userId": 1,
+#   "username": "johndoe",
+#   "content": "Beautiful sunset at the beach today! 🌅",
+#   "mediaUrl": "https://example.com/images/sunset-beach.jpg",
+#   "deleted": false,
+#   "createdAt": "2024-01-15T10:35:00",
+#   "updatedAt": "2024-01-15T10:35:00"
+# }
+
+### 3. Create a post with only media (no text)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "content": "",
+  "mediaUrl": "https://example.com/images/photo.jpg"
+}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T10:40:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Content is required when no media is provided",
+#   "path": "/api/posts"
+# }
+
+### 4. Get a post by ID
+GET {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "userId": 1,
+#   "username": "johndoe",
+#   "content": "Just deployed my first microservices architecture! 🚀 Feeling accomplished.",
+#   "mediaUrl": null,
+#   "deleted": false,
+#   "createdAt": "2024-01-15T10:30:00",
+#   "updatedAt": "2024-01-15T10:30:00"
+# }
+
+### 5. Update a post
+PUT {{baseUrl}}/1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "content": "Just deployed my first microservices architecture! 🚀 Feeling accomplished. Update: Now with CI/CD pipeline!",
+  "mediaUrl": null
+}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "userId": 1,
+#   "username": "johndoe",
+#   "content": "Just deployed my first microservices architecture! 🚀 Feeling accomplished. Update: Now with CI/CD pipeline!",
+#   "mediaUrl": null,
+#   "deleted": false,
+#   "createdAt": "2024-01-15T10:30:00",
+#   "updatedAt": "2024-01-15T11:00:00"
+# }
+
+### 6. Attempt to update another user's post (should fail)
+PUT {{baseUrl}}/2
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "content": "Hacked content",
+  "mediaUrl": null
+}
+
+### Expected Response (403 Forbidden):
+# {
+#   "timestamp": "2024-01-15T11:05:00",
+#   "status": 403,
+#   "error": "Forbidden",
+#   "message": "You can only update your own posts",
+#   "path": "/api/posts/2"
+# }
+
+### 7. Delete a post (soft delete)
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (204 No Content)
+
+### 8. Attempt to get a deleted post (should fail)
+GET {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (404 Not Found):
+# {
+#   "timestamp": "2024-01-15T11:10:00",
+#   "status": 404,
+#   "error": "Not Found",
+#   "message": "Post not found",
+#   "path": "/api/posts/1"
+# }
+
+### 9. Attempt to delete another user's post (should fail)
+DELETE {{baseUrl}}/3
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (403 Forbidden):
+# {
+#   "timestamp": "2024-01-15T11:15:00",
+#   "status": 403,
+#   "error": "Forbidden",
+#   "message": "You can only delete your own posts",
+#   "path": "/api/posts/3"
+# }
+
+### 10. Get posts by user ID
+GET {{baseUrl}}/user/1?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "content": [
+#     {
+#       "id": 2,
+#       "userId": 1,
+#       "username": "johndoe",
+#       "content": "Beautiful sunset at the beach today! 🌅",
+#       "mediaUrl": "https://example.com/images/sunset-beach.jpg",
+#       "deleted": false,
+#       "createdAt": "2024-01-15T10:35:00",
+#       "updatedAt": "2024-01-15T10:35:00"
+#     }
+#   ],
+#   "pageable": {
+#     "pageNumber": 0,
+#     "pageSize": 10
+#   },
+#   "totalElements": 1,
+#   "totalPages": 1,
+#   "last": true
+# }
+
+### 11. Get posts with pagination (page 2)
+GET {{baseUrl}}/user/1?page=1&size=5
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns second page of posts (if available)
+
+### 12. Create a post with content exceeding limit (should fail)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit... [5001 characters]",
+  "mediaUrl": null
+}
+
+### Expected Response (400 Bad Request):
+# {
+#   "timestamp": "2024-01-15T11:20:00",
+#   "status": 400,
+#   "error": "Bad Request",
+#   "message": "Content must not exceed 5000 characters",
+#   "path": "/api/posts"
+# }
+
+### 13. Get current user's posts
+GET {{baseUrl}}/user/me?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# Returns posts created by the authenticated user

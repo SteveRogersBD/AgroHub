@@ -1,0 +1,153 @@
+### Like Service API Examples
+### Base URL: http://localhost:8086/api/likes (direct) or http://localhost:8080/api/likes (via gateway)
+
+### Variables
+@baseUrl = http://localhost:8080/api/likes
+@accessToken = YOUR_JWT_TOKEN_HERE
+
+### 1. Like a post
+POST {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "postId": 1,
+#   "userId": 1,
+#   "createdAt": "2024-01-15T10:30:00"
+# }
+
+### 2. Like another post
+POST {{baseUrl}}/2
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 2,
+#   "postId": 2,
+#   "userId": 1,
+#   "createdAt": "2024-01-15T10:31:00"
+# }
+
+### 3. Like the same post again (idempotent - should not create duplicate)
+POST {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "id": 1,
+#   "postId": 1,
+#   "userId": 1,
+#   "createdAt": "2024-01-15T10:30:00"
+# }
+
+### 4. Unlike a post
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (204 No Content)
+
+### 5. Unlike a post you haven't liked (idempotent - should not fail)
+DELETE {{baseUrl}}/99
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (204 No Content)
+
+### 6. Get like count for a post
+GET {{baseUrl}}/1/count
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "postId": 1,
+#   "count": 5
+# }
+
+### 7. Check if current user liked a post (liked)
+GET {{baseUrl}}/2/check
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "postId": 2,
+#   "liked": true
+# }
+
+### 8. Check if current user liked a post (not liked)
+GET {{baseUrl}}/99/check
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "postId": 99,
+#   "liked": false
+# }
+
+### 9. Get like counts for multiple posts (batch)
+POST {{baseUrl}}/batch/counts
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "postIds": [1, 2, 3, 4, 5]
+}
+
+### Expected Response (200 OK):
+# {
+#   "counts": {
+#     "1": 5,
+#     "2": 12,
+#     "3": 3,
+#     "4": 0,
+#     "5": 8
+#   }
+# }
+
+### 10. Get like count for post with no likes
+GET {{baseUrl}}/999/count
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (200 OK):
+# {
+#   "postId": 999,
+#   "count": 0
+# }
+
+### 11. Like a non-existent post (should fail)
+POST {{baseUrl}}/99999
+Authorization: Bearer {{accessToken}}
+
+### Expected Response (404 Not Found):
+# {
+#   "timestamp": "2024-01-15T10:40:00",
+#   "status": 404,
+#   "error": "Not Found",
+#   "message": "Post not found",
+#   "path": "/api/likes/99999"
+# }
+
+### 12. Batch request with empty array
+POST {{baseUrl}}/batch/counts
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "postIds": []
+}
+
+### Expected Response (200 OK):
+# {
+#   "counts": {}
+# }
+
+### 13. Batch request with large number of post IDs
+POST {{baseUrl}}/batch/counts
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "postIds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+}
+
+### Expected Response (200 OK):
+# Returns counts for all 20 posts
