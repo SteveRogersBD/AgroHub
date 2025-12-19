@@ -79,9 +79,9 @@ AgroHub is a modern Android application designed to revolutionize farming practi
 |------------|-----------|--------------|
 | ![Home](docs/screenshots/home.png) | ![Map](docs/screenshots/map.png) | ![Chat](docs/screenshots/chat.png) |
 
-| Weather | Disease Detection | Community |
-|---------|------------------|-------------|
-| ![Weather](docs/screenshots/weather.png) | ![Disease](docs/screenshots/disease.png) | ![Market](docs/screenshots/community.png) |
+| Weather | Disease Detection |
+|---------|------------------|
+| ![Weather](docs/screenshots/weather.png) | ![Disease](docs/screenshots/disease.png) |
 
 </div>
 
