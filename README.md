@@ -79,9 +79,9 @@ AgroHub is a modern Android application designed to revolutionize farming practi
 |------------|-----------|--------------|
 | ![Home](docs/screenshots/home.png) | ![Map](docs/screenshots/map.png) | ![Chat](docs/screenshots/chat.png) |
 
-| Weather | Disease Detection | Marketplace |
+| Weather | Disease Detection |
 |---------|------------------|-------------|
-| ![Weather](docs/screenshots/weather.png) | ![Disease](docs/screenshots/disease.png) | ![Market](docs/screenshots/market.png) |
+| ![Weather](docs/screenshots/weather.png) | ![Disease](docs/screenshots/disease.png) |
 
 </div>
 
@@ -222,8 +222,6 @@ We welcome contributions! Here's how you can help:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and development process.
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -237,20 +235,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact & Support
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/agrohub/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/agrohub/discussions)
-- **Email:** your.email@example.com
-
-## 🗺️ Roadmap
-
-- [ ] Offline mode support
-- [ ] Multi-language support
-- [ ] Advanced analytics dashboard
-- [ ] IoT sensor integration
-- [ ] Crop yield prediction
-- [ ] Market price tracking
-- [ ] Export data to PDF/Excel
-- [ ] Push notifications for weather alerts
+- **Issues:** [GitHub Issues](https://github.com/SteveRogersBD/Agrohub/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/SteveRogersBD/Agrohub/discussions)
+- **Email:** cd43641@truman.edu
 
 ## 📊 Project Status
 
@@ -266,6 +253,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ⭐ Star this repo if you find it helpful!
 
-[Report Bug](https://github.com/yourusername/agrohub/issues) • [Request Feature](https://github.com/yourusername/agrohub/issues)
+[Report Bug](https://github.com/SteveRogersBD/Agrohub/issues) • [Request Feature](https://github.com/SteveRogersBD/Agrohub/issues)
 
 </div>
