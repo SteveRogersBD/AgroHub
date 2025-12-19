@@ -157,9 +157,9 @@ private fun HomeTabContent(
     navController: NavController,
     viewModel: FieldViewModel
 ) {
+    val context = LocalContext.current
+    
     // Load mock data
-    val farms = remember { MockDataProvider.generateFarmData() }
-    // val quickStats = remember { MockDataProvider.generateQuickStats() } // Using real data now
     val weatherForecast = remember { MockDataProvider.generateWeatherForecast() }
     
     // Real data from FieldViewModel
@@ -170,6 +170,19 @@ private fun HomeTabContent(
     val pendingTasks = remember(fields) {
         fields.flatMap { it.tasks }.count { it.status == TaskStatus.PENDING }
     }
+    
+    // Content ViewModel for videos and news
+    val contentViewModel = remember {
+        val repository = com.example.agrohub.data.repository.ContentRepository(
+            NetworkModule.provideSerpApiService()
+        )
+        com.example.agrohub.presentation.content.ContentViewModel(repository)
+    }
+    
+    val videos by contentViewModel.videos.collectAsState()
+    val news by contentViewModel.news.collectAsState()
+    val isLoadingVideos by contentViewModel.isLoadingVideos.collectAsState()
+    val isLoadingNews by contentViewModel.isLoadingNews.collectAsState()
     
     // Animation state for fade-in
     var visible by remember { mutableStateOf(false) }
@@ -207,11 +220,6 @@ private fun HomeTabContent(
             )
         }
         
-        // Farm Snapshot Section
-        item {
-            FarmSnapshotSection(farms = farms)
-        }
-        
         // Weather Warning Card
         item {
             val todayForecast = weatherForecast.firstOrNull()
@@ -229,9 +237,19 @@ private fun HomeTabContent(
             QuickActionsGrid(navController = navController)
         }
         
+        // Agriculture Videos Section
+        item {
+            VideoSection(videos = videos, isLoading = isLoadingVideos)
+        }
+        
+        // Agriculture News Section
+        item {
+            NewsSection(news = news, isLoading = isLoadingNews)
+        }
+        
         // Map Preview
         item {
-            MapPreview(farmLocations = farms.map { it.location })
+            MapPreview(farmLocations = fields.mapNotNull { it.centerPoint?.toLatLng() })
         }
     }
 }

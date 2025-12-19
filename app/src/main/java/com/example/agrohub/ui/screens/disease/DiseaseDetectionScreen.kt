@@ -11,12 +11,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,10 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.agrohub.models.*
+import com.example.agrohub.presentation.disease.DiseaseDetectionViewModel
 import com.example.agrohub.ui.components.buttons.PrimaryButton
 import com.example.agrohub.ui.components.buttons.SecondaryButton
 import com.example.agrohub.ui.navigation.Routes
@@ -47,8 +49,24 @@ import com.example.agrohub.ui.theme.*
 fun DiseaseDetectionScreen(
     navController: NavController
 ) {
+    val context = LocalContext.current
+    val viewModel = remember { 
+        com.example.agrohub.presentation.disease.DiseaseDetectionViewModelFactory.getInstance(context)
+    }
+    
     // State for selected image
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showInputForm by remember { mutableStateOf(false) }
+    
+    // Observe UI state for navigation
+    val uiState by viewModel.uiState.collectAsState()
+    
+    LaunchedEffect(uiState) {
+        if (uiState is com.example.agrohub.presentation.disease.DiseaseDetectionUiState.Success ||
+            uiState is com.example.agrohub.presentation.disease.DiseaseDetectionUiState.Loading) {
+            navController.navigate("disease_result_screen")
+        }
+    }
     
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -65,6 +83,9 @@ fun DiseaseDetectionScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
+        if (uri != null) {
+            showInputForm = true
+        }
     }
     
     Scaffold(
@@ -91,7 +112,7 @@ fun DiseaseDetectionScreen(
         ) {
             // Show upload section when no image is selected
             AnimatedVisibility(
-                visible = selectedImageUri == null,
+                visible = selectedImageUri == null && !showInputForm,
                 enter = fadeIn() + slideInVertically(),
                 exit = fadeOut() + slideOutVertically()
             ) {
@@ -107,24 +128,271 @@ fun DiseaseDetectionScreen(
                 )
             }
             
-            // Show preview section when image is selected
+            // Show input form when image is selected
             AnimatedVisibility(
-                visible = selectedImageUri != null,
+                visible = showInputForm && selectedImageUri != null,
                 enter = fadeIn() + slideInVertically(),
                 exit = fadeOut() + slideOutVertically()
             ) {
-                ImagePreviewSection(
+                DiseaseInputForm(
                     imageUri = selectedImageUri,
-                    onConfirm = {
-                        // Navigate to disease result screen
-                        // In a real app, this would trigger analysis
-                        navController.navigate(Routes.diseaseResult("sample"))
+                    onSubmit = { input ->
+                        viewModel.analyzeDisease(input)
+                        showInputForm = false
                     },
                     onCancel = {
                         selectedImageUri = null
+                        showInputForm = false
                     }
                 )
             }
+        }
+    }
+}
+
+
+/**
+ * Disease Input Form
+ * Form to collect crop information before analysis
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DiseaseInputForm(
+    imageUri: Uri?,
+    onSubmit: (DiseaseDetectionInput) -> Unit,
+    onCancel: () -> Unit
+) {
+    var cropName by remember { mutableStateOf("") }
+    var selectedCropType by remember { mutableStateOf(CropType.VEGETABLE) }
+    var selectedGrowthStage by remember { mutableStateOf(GrowthStage.VEGETATIVE) }
+    var selectedAffectedArea by remember { mutableStateOf(AffectedArea.LEAVES) }
+    var symptoms by remember { mutableStateOf("") }
+    var additionalInfo by remember { mutableStateOf("") }
+    
+    var showCropTypeDropdown by remember { mutableStateOf(false) }
+    var showGrowthStageDropdown by remember { mutableStateOf(false) }
+    var showAffectedAreaDropdown by remember { mutableStateOf(false) }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(AgroHubSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(AgroHubSpacing.md)
+    ) {
+        // Image preview
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            shape = AgroHubShapes.medium,
+            colors = CardDefaults.cardColors(containerColor = AgroHubColors.White)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (imageUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUri),
+                        contentDescription = "Selected crop image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
+        
+        Text(
+            text = "Crop Information",
+            style = AgroHubTypography.Heading3,
+            color = AgroHubColors.TextPrimary
+        )
+        
+        // Crop Name
+        OutlinedTextField(
+            value = cropName,
+            onValueChange = { cropName = it },
+            label = { Text("Crop Name") },
+            placeholder = { Text("e.g., Tomato, Wheat, Rice") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = AgroHubColors.DeepGreen,
+                focusedLabelColor = AgroHubColors.DeepGreen
+            )
+        )
+        
+        // Crop Type Dropdown
+        ExposedDropdownMenuBox(
+            expanded = showCropTypeDropdown,
+            onExpandedChange = { showCropTypeDropdown = it }
+        ) {
+            OutlinedTextField(
+                value = selectedCropType.displayName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Crop Type") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCropTypeDropdown) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AgroHubColors.DeepGreen,
+                    focusedLabelColor = AgroHubColors.DeepGreen
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = showCropTypeDropdown,
+                onDismissRequest = { showCropTypeDropdown = false }
+            ) {
+                CropType.values().forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(type.displayName) },
+                        onClick = {
+                            selectedCropType = type
+                            showCropTypeDropdown = false
+                        }
+                    )
+                }
+            }
+        }
+        
+        // Growth Stage Dropdown
+        ExposedDropdownMenuBox(
+            expanded = showGrowthStageDropdown,
+            onExpandedChange = { showGrowthStageDropdown = it }
+        ) {
+            OutlinedTextField(
+                value = selectedGrowthStage.displayName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Growth Stage") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showGrowthStageDropdown) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AgroHubColors.DeepGreen,
+                    focusedLabelColor = AgroHubColors.DeepGreen
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = showGrowthStageDropdown,
+                onDismissRequest = { showGrowthStageDropdown = false }
+            ) {
+                GrowthStage.values().forEach { stage ->
+                    DropdownMenuItem(
+                        text = { Text(stage.displayName) },
+                        onClick = {
+                            selectedGrowthStage = stage
+                            showGrowthStageDropdown = false
+                        }
+                    )
+                }
+            }
+        }
+        
+        // Affected Area Dropdown
+        ExposedDropdownMenuBox(
+            expanded = showAffectedAreaDropdown,
+            onExpandedChange = { showAffectedAreaDropdown = it }
+        ) {
+            OutlinedTextField(
+                value = selectedAffectedArea.displayName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Affected Area") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showAffectedAreaDropdown) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AgroHubColors.DeepGreen,
+                    focusedLabelColor = AgroHubColors.DeepGreen
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = showAffectedAreaDropdown,
+                onDismissRequest = { showAffectedAreaDropdown = false }
+            ) {
+                AffectedArea.values().forEach { area ->
+                    DropdownMenuItem(
+                        text = { Text(area.displayName) },
+                        onClick = {
+                            selectedAffectedArea = area
+                            showAffectedAreaDropdown = false
+                        }
+                    )
+                }
+            }
+        }
+        
+        // Symptoms
+        OutlinedTextField(
+            value = symptoms,
+            onValueChange = { symptoms = it },
+            label = { Text("Symptoms") },
+            placeholder = { Text("Describe what you observe...") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            maxLines = 4,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = AgroHubColors.DeepGreen,
+                focusedLabelColor = AgroHubColors.DeepGreen
+            )
+        )
+        
+        // Additional Info
+        OutlinedTextField(
+            value = additionalInfo,
+            onValueChange = { additionalInfo = it },
+            label = { Text("Additional Information (Optional)") },
+            placeholder = { Text("Any other relevant details...") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            maxLines = 4,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = AgroHubColors.DeepGreen,
+                focusedLabelColor = AgroHubColors.DeepGreen
+            )
+        )
+        
+        Spacer(modifier = Modifier.height(AgroHubSpacing.md))
+        
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AgroHubSpacing.md)
+        ) {
+            SecondaryButton(
+                text = "Cancel",
+                onClick = onCancel,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp)
+            )
+            
+            PrimaryButton(
+                text = "Analyze",
+                onClick = {
+                    if (imageUri != null && cropName.isNotBlank() && symptoms.isNotBlank()) {
+                        val input = DiseaseDetectionInput(
+                            imageUri = imageUri,
+                            cropName = cropName,
+                            cropType = selectedCropType,
+                            growthStage = selectedGrowthStage,
+                            affectedArea = selectedAffectedArea,
+                            symptoms = symptoms,
+                            additionalInfo = additionalInfo
+                        )
+                        onSubmit(input)
+                    }
+                },
+                icon = Icons.Default.Search,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                enabled = cropName.isNotBlank() && symptoms.isNotBlank()
+            )
         }
     }
 }
@@ -217,116 +485,5 @@ fun CameraUploadSection(
                 .fillMaxWidth()
                 .height(56.dp)
         )
-    }
-}
-
-
-/**
- * Image Preview Section
- * Displays selected image with crop and confirm buttons
- * 
- * Requirements: 3.2
- * 
- * @param imageUri URI of the selected image
- * @param onConfirm Handler for confirm button
- * @param onCancel Handler for cancel button
- */
-@Composable
-fun ImagePreviewSection(
-    imageUri: Uri?,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(AgroHubSpacing.lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Title
-        Text(
-            text = "Preview Image",
-            style = AgroHubTypography.Heading2,
-            color = AgroHubColors.TextPrimary,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(AgroHubSpacing.md))
-        
-        // Description
-        Text(
-            text = "Review your image before analysis",
-            style = AgroHubTypography.Body,
-            color = AgroHubColors.TextSecondary,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(AgroHubSpacing.lg))
-        
-        // Image preview
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f),
-            shape = AgroHubShapes.large,
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 4.dp
-            ),
-            colors = CardDefaults.cardColors(
-                containerColor = AgroHubColors.White
-            )
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                if (imageUri != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUri),
-                        contentDescription = "Selected crop image",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(AgroHubShapes.large),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    // Placeholder if no image
-                    Icon(
-                        imageVector = Icons.Default.PhotoLibrary,
-                        contentDescription = "No image",
-                        modifier = Modifier.size(80.dp),
-                        tint = AgroHubColors.TextHint
-                    )
-                }
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(AgroHubSpacing.xl))
-        
-        // Action buttons row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AgroHubSpacing.md)
-        ) {
-            // Cancel button
-            SecondaryButton(
-                text = "Cancel",
-                onClick = onCancel,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp)
-            )
-            
-            // Confirm button
-            PrimaryButton(
-                text = "Analyze",
-                onClick = onConfirm,
-                icon = Icons.Default.Check,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp)
-            )
-        }
     }
 }

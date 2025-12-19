@@ -98,7 +98,7 @@ fun FieldMapScreen(
 
     // Camera position state
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(initialPosition!!, 18f)
+        position = CameraPosition.fromLatLngZoom(initialPosition!!, 15f)
     }
 
     // Update camera when fields are loaded or user location is obtained
@@ -114,7 +114,7 @@ fun FieldMapScreen(
 
         targetPosition?.let {
             cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(it, 18f),
+                CameraUpdateFactory.newLatLngZoom(it, 15f),
                 durationMs = 1000
             )
         }
@@ -230,22 +230,36 @@ fun FieldMapScreen(
                     }
                 }
             ) {
-                // Draw saved fields
-                savedFields.forEach { field ->
+                // Draw saved fields with colorful boundaries
+                savedFields.forEachIndexed { index, field ->
                     if (field.points.isNotEmpty()) {
+                        // Generate different colors for each field
+                        val fieldColors = listOf(
+                            Color(0xFF4CAF50), // Green
+                            Color(0xFF2196F3), // Blue
+                            Color(0xFFFF9800), // Orange
+                            Color(0xFF9C27B0), // Purple
+                            Color(0xFFE91E63), // Pink
+                            Color(0xFF00BCD4), // Cyan
+                            Color(0xFFFFEB3B), // Yellow
+                            Color(0xFF795548)  // Brown
+                        )
+                        val strokeColor = fieldColors[index % fieldColors.size]
+                        val fillColor = strokeColor.copy(alpha = 0.3f)
+                        
                         Polygon(
                             points = field.points.map { it.toLatLng() },
-                            fillColor = AgroHubColors.LightGreen.copy(alpha = 0.4f),
-                            strokeColor = AgroHubColors.White,
-                            strokeWidth = 5f
+                            fillColor = fillColor,
+                            strokeColor = strokeColor,
+                            strokeWidth = 8f
                         )
 
                         field.points.forEach { point ->
                             Circle(
                                 center = point.toLatLng(),
-                                radius = 1.0,
-                                fillColor = AgroHubColors.DeepGreen,
-                                strokeColor = AgroHubColors.DeepGreen,
+                                radius = 1.5,
+                                fillColor = strokeColor,
+                                strokeColor = Color.White,
                                 strokeWidth = 2f
                             )
                         }

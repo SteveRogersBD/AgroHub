@@ -184,6 +184,22 @@ object NetworkModule {
         return weatherRetrofit.create(WeatherApiService::class.java)
     }
     
+    fun provideSerpApiService(): SerpApiService {
+        // SerpAPI uses a different base URL
+        val serpRetrofit = Retrofit.Builder()
+            .baseUrl("https://serpapi.com/")
+            .client(OkHttpClient.Builder()
+                .addInterceptor(LoggingInterceptor(BuildConfig.DEBUG))
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build())
+            .addConverterFactory(GsonConverterFactory.create(provideGson()))
+            .build()
+        
+        return serpRetrofit.create(SerpApiService::class.java)
+    }
+    
     /**
      * Clears all cached instances. Useful for testing or when context changes.
      */

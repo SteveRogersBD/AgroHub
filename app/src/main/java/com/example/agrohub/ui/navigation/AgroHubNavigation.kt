@@ -188,6 +188,19 @@ fun AgroHubNavigation(
                 DiseaseDetectionScreen(navController = navController)
             }
             
+            // Disease Result Screen
+            composable("disease_result_screen") {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val viewModel = remember { 
+                    com.example.agrohub.presentation.disease.DiseaseDetectionViewModelFactory.getInstance(context)
+                }
+                
+                DiseaseResultScreen(
+                    navController = navController,
+                    viewModel = viewModel
+                )
+            }
+            
             // Weather Screen
             composable(Routes.WEATHER) {
                 WeatherScreen(navController = navController)
@@ -275,15 +288,6 @@ fun AgroHubNavigation(
             // Profile Screen
             composable(Routes.PROFILE) {
                 ProfileScreen(navController = navController)
-            }
-            
-            // Disease Result Screen (with parameter)
-            composable(Routes.DISEASE_RESULT) { backStackEntry ->
-                val diseaseId = backStackEntry.arguments?.getString("diseaseId") ?: ""
-                DiseaseResultScreen(
-                    navController = navController,
-                    diseaseId = diseaseId
-                )
             }
             
             // Product Detail Screen (with parameter)
