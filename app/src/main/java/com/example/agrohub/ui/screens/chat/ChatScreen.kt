@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.agrohub.data.MockDataProvider
 import com.example.agrohub.models.ChatMessage
 import com.example.agrohub.services.GeminiService
 import com.example.agrohub.ui.icons.AgroHubIcons
@@ -44,7 +43,19 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen() {
-    var messages by remember { mutableStateOf(MockDataProvider.generateChatMessages()) }
+    // Start with empty messages - no placeholders
+    var messages by remember { 
+        mutableStateOf(listOf(
+            ChatMessage(
+                id = "welcome_msg",
+                text = "Hello! I'm your Agri-Bot assistant. I can help you with farming questions, crop management, pest control, weather advice, and more. How can I assist you today?",
+                isUser = false,
+                timestamp = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+                    .format(java.util.Date()),
+                icon = AgroHubIcons.Leaf
+            )
+        ))
+    }
     var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -69,7 +80,7 @@ fun ChatScreen() {
                             color = AgroHubColors.White
                         )
                         Text(
-                            text = "Online",
+                            text = if (isLoading) "Typing..." else "Online",
                             style = AgroHubTypography.Caption,
                             color = AgroHubColors.LightGreen
                         )

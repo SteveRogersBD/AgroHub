@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.agrohub.data.MockDataProvider
 import com.example.agrohub.domain.model.FeedPost
 import com.example.agrohub.domain.model.Comment
 import com.example.agrohub.domain.util.UiState
@@ -49,13 +50,9 @@ fun CommunityScreen(
     feedViewModel: FeedViewModel,
     postViewModel: PostViewModel
 ) {
-    val feedState by feedViewModel.feedState.collectAsState()
+    // Use mock data for demo
+    val mockPosts = remember { MockDataProvider.generateMockFeedPosts() }
     var expandedPostId by remember { mutableStateOf<Long?>(null) }
-    
-    // Load feed on first composition
-    LaunchedEffect(Unit) {
-        feedViewModel.loadFeed()
-    }
     
     Box(
         modifier = Modifier
@@ -70,44 +67,26 @@ fun CommunityScreen(
                 onCreatePostClick = { navController.navigate(Routes.CreatePost.route) }
             )
             
-            // Community Feed
-            when (val state = feedState) {
-                is UiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = AgroHubColors.DeepGreen)
-                    }
-                }
-                is UiState.Success -> {
-                    val posts = state.data.items
-                    if (posts.isEmpty()) {
-                        EmptyFeedMessage()
-                    } else {
-                        CommunityFeed(
-                            posts = posts,
-                            expandedPostId = expandedPostId,
-                            onPostExpand = { postId ->
-                                expandedPostId = if (expandedPostId == postId) null else postId
-                            },
-                            onLike = { postId -> feedViewModel.toggleLike(postId) },
-                            onComment = { postId -> expandedPostId = postId },
-                            onLoadComments = { postId -> postViewModel.loadComments(postId) },
-                            postViewModel = postViewModel,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-                is UiState.Error -> {
-                    ErrorMessage(
-                        message = state.message ?: "Failed to load feed",
-                        onRetry = { feedViewModel.loadFeed() }
-                    )
-                }
-                is UiState.Idle -> {
-                    // Initial state, loading will be triggered by LaunchedEffect
-                }
+            // Community Feed with Mock Data
+            if (mockPosts.isEmpty()) {
+                EmptyFeedMessage()
+            } else {
+                CommunityFeed(
+                    posts = mockPosts,
+                    expandedPostId = expandedPostId,
+                    onPostExpand = { postId ->
+                        expandedPostId = if (expandedPostId == postId) null else postId
+                    },
+                    onLike = { postId -> 
+                        // Mock like action - just for demo
+                    },
+                    onComment = { postId -> expandedPostId = postId },
+                    onLoadComments = { postId -> 
+                        // Mock load comments - handled in FeedPostCard
+                    },
+                    postViewModel = postViewModel,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -201,7 +180,8 @@ fun FeedPostCard(
     postViewModel: PostViewModel,
     modifier: Modifier = Modifier
 ) {
-    val commentsState by postViewModel.commentsState.collectAsState()
+    // Use mock comments for demo
+    val mockComments = remember(post.id) { MockDataProvider.generateMockComments(post.id) }
     
     Card(
         modifier = modifier,
@@ -265,41 +245,12 @@ fun FeedPostCard(
                 Divider(color = AgroHubColors.SurfaceLight)
                 Spacer(modifier = Modifier.height(AgroHubSpacing.sm))
                 
-                when (commentsState) {
-                    is UiState.Loading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(AgroHubSpacing.md),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = AgroHubColors.DeepGreen,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                    is UiState.Success -> {
-                        val comments = (commentsState as UiState.Success).data.items
-                        CommentSection(
-                            comments = comments,
-                            postId = post.id,
-                            postViewModel = postViewModel,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    is UiState.Error -> {
-                        Text(
-                            text = "Failed to load comments",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(AgroHubSpacing.md)
-                        )
-                    }
-                    is UiState.Idle -> {
-                        // Initial state
-                    }
-                }
+                CommentSection(
+                    comments = mockComments,
+                    postId = post.id,
+                    postViewModel = postViewModel,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
             
             // View Comments Button

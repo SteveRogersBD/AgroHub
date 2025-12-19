@@ -771,4 +771,213 @@ object MockDataProvider {
     fun getProductById(productId: String): Product? {
         return generateMarketplaceProducts().find { it.id == productId }
     }
+    
+    // ========== Mock Feed Data for Demo ==========
+    
+    /**
+     * Generate mock feed posts for hackathon demo
+     * Uses drawable resources and creates realistic farming community posts
+     */
+    fun generateMockFeedPosts(): List<com.example.agrohub.domain.model.FeedPost> {
+        val now = java.time.LocalDateTime.now()
+        
+        return listOf(
+            com.example.agrohub.domain.model.FeedPost(
+                id = 1L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 101L,
+                    username = "rajesh_farmer",
+                    avatarUrl = null  // No profile pic
+                ),
+                content = "Just harvested my wheat crop! Yield is looking great this season. Any tips for storage?",
+                mediaUrl = "android.resource://com.example.agrohub/" + com.example.agrohub.R.drawable.crop,
+                likeCount = 45,
+                commentCount = 12,
+                isLikedByCurrentUser = false,
+                createdAt = now.minusHours(2),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 2L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 102L,
+                    username = "priya_agro",
+                    avatarUrl = null
+                ),
+                content = "Trying organic farming for the first time. Excited to see the results! Anyone have experience with organic pest control?",
+                mediaUrl = "android.resource://com.example.agrohub/" + com.example.agrohub.R.drawable.field,
+                likeCount = 67,
+                commentCount = 23,
+                isLikedByCurrentUser = true,
+                createdAt = now.minusHours(5),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 3L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 103L,
+                    username = "amit_crops",
+                    avatarUrl = null
+                ),
+                content = "Weather forecast shows rain next week. Perfect timing for planting! Make sure to prepare your fields.",
+                mediaUrl = null,  // No image
+                likeCount = 89,
+                commentCount = 34,
+                isLikedByCurrentUser = true,
+                createdAt = now.minusHours(8),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 4L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 104L,
+                    username = "sunita_organic",
+                    avatarUrl = null
+                ),
+                content = "My tomatoes are growing beautifully! Thanks to everyone who gave advice last month. This community is amazing!",
+                mediaUrl = "android.resource://com.example.agrohub/" + com.example.agrohub.R.drawable.crop,
+                likeCount = 123,
+                commentCount = 45,
+                isLikedByCurrentUser = false,
+                createdAt = now.minusHours(12),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 5L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 105L,
+                    username = "vikram_harvest",
+                    avatarUrl = null
+                ),
+                content = "Looking for recommendations on pest control. Seeing some issues with my cotton crop. Any suggestions?",
+                mediaUrl = null,
+                likeCount = 34,
+                commentCount = 56,
+                isLikedByCurrentUser = false,
+                createdAt = now.minusHours(18),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 6L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 106L,
+                    username = "meera_fields",
+                    avatarUrl = null
+                ),
+                content = "Attended a great workshop on sustainable farming today. Learned so much about soil health and crop rotation!",
+                mediaUrl = "android.resource://com.example.agrohub/" + com.example.agrohub.R.drawable.field,
+                likeCount = 78,
+                commentCount = 19,
+                isLikedByCurrentUser = true,
+                createdAt = now.minusDays(1),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 7L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 107L,
+                    username = "arjun_agri",
+                    avatarUrl = null
+                ),
+                content = "First time using drip irrigation. The water savings are incredible! Highly recommend to everyone.",
+                mediaUrl = null,
+                likeCount = 156,
+                commentCount = 67,
+                isLikedByCurrentUser = false,
+                createdAt = now.minusDays(1).minusHours(6),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 8L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 108L,
+                    username = "kavita_farms",
+                    avatarUrl = null
+                ),
+                content = "Market prices for rice are looking good. Time to sell! What are the prices in your area?",
+                mediaUrl = null,
+                likeCount = 92,
+                commentCount = 41,
+                isLikedByCurrentUser = true,
+                createdAt = now.minusDays(2),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 9L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 109L,
+                    username = "ramesh_organic",
+                    avatarUrl = null
+                ),
+                content = "Anyone else dealing with this heat wave? My crops need extra care. Increased irrigation frequency.",
+                mediaUrl = "android.resource://com.example.agrohub/" + com.example.agrohub.R.drawable.disease,
+                likeCount = 67,
+                commentCount = 28,
+                isLikedByCurrentUser = false,
+                createdAt = now.minusDays(2).minusHours(8),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.FeedPost(
+                id = 10L,
+                author = com.example.agrohub.domain.model.PostAuthor(
+                    id = 110L,
+                    username = "deepak_harvest",
+                    avatarUrl = null
+                ),
+                content = "Proud to say I am now certified in organic farming! Hard work pays off. Thank you to all my mentors!",
+                mediaUrl = null,
+                likeCount = 234,
+                commentCount = 89,
+                isLikedByCurrentUser = true,
+                createdAt = now.minusDays(3),
+                updatedAt = null
+            )
+        )
+    }
+    
+    /**
+     * Generate mock comments for demo posts
+     */
+    fun generateMockComments(postId: Long): List<com.example.agrohub.domain.model.Comment> {
+        val now = java.time.LocalDateTime.now()
+        
+        return listOf(
+            com.example.agrohub.domain.model.Comment(
+                id = (postId * 100) + 1,
+                postId = postId,
+                author = com.example.agrohub.domain.model.CommentAuthor(
+                    id = 201L,
+                    username = "farmer_friend",
+                    avatarUrl = null
+                ),
+                content = "Great work! Keep it up!",
+                createdAt = now.minusHours(1),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.Comment(
+                id = (postId * 100) + 2,
+                postId = postId,
+                author = com.example.agrohub.domain.model.CommentAuthor(
+                    id = 202L,
+                    username = "agri_expert",
+                    avatarUrl = null
+                ),
+                content = "Thanks for sharing this! Very helpful information.",
+                createdAt = now.minusHours(2),
+                updatedAt = null
+            ),
+            com.example.agrohub.domain.model.Comment(
+                id = (postId * 100) + 3,
+                postId = postId,
+                author = com.example.agrohub.domain.model.CommentAuthor(
+                    id = 203L,
+                    username = "green_thumb",
+                    avatarUrl = null
+                ),
+                content = "I had the same experience. This really works!",
+                createdAt = now.minusHours(3),
+                updatedAt = null
+            )
+        )
+    }
 }
