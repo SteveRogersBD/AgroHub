@@ -59,6 +59,42 @@ data class Field(
         
         return area * metersPerDegreeLat * metersPerDegreeLng
     }
+    
+    /**
+     * Calculate the perimeter of the field in meters
+     */
+    fun calculatePerimeter(): Double {
+        if (points.size < 2) return 0.0
+        
+        var perimeter = 0.0
+        val n = points.size
+        
+        for (i in 0 until n) {
+            val j = (i + 1) % n
+            val distance = calculateDistance(points[i], points[j])
+            perimeter += distance
+        }
+        
+        return perimeter
+    }
+    
+    /**
+     * Calculate distance between two points using Haversine formula
+     */
+    private fun calculateDistance(p1: FieldPoint, p2: FieldPoint): Double {
+        val earthRadius = 6371000.0 // meters
+        
+        val lat1Rad = Math.toRadians(p1.latitude)
+        val lat2Rad = Math.toRadians(p2.latitude)
+        val deltaLat = Math.toRadians(p2.latitude - p1.latitude)
+        val deltaLng = Math.toRadians(p2.longitude - p1.longitude)
+        
+        val a = sin(deltaLat / 2).pow(2) + 
+                cos(lat1Rad) * cos(lat2Rad) * sin(deltaLng / 2).pow(2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        
+        return earthRadius * c
+    }
 }
 
 /**
@@ -77,21 +113,5 @@ data class FieldPoint(
     }
 }
 
-/**
- * Represents a task associated with a field
- */
-data class FieldTask(
-    val id: String = "",
-    val title: String = "",
-    val description: String = "",
-    val status: TaskStatus = TaskStatus.PENDING,
-    val dueDate: Long? = null,
-    val createdAt: Long = System.currentTimeMillis()
-)
 
-enum class TaskStatus {
-    PENDING,
-    IN_PROGRESS,
-    COMPLETED,
-    CANCELLED
-}
+

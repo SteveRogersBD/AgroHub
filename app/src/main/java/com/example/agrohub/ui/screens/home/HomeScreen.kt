@@ -30,6 +30,9 @@ import com.example.agrohub.presentation.post.PostViewModel
 import com.example.agrohub.ui.icons.AgroHubIcons
 import com.example.agrohub.ui.navigation.Routes
 import com.example.agrohub.ui.screens.community.CommunityScreen
+import com.example.agrohub.presentation.field.FieldViewModel
+import com.example.agrohub.domain.model.TaskStatus
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.agrohub.ui.theme.AgroHubColors
 import com.example.agrohub.ui.theme.AgroHubSpacing
 import com.example.agrohub.ui.theme.AgroHubTypography
@@ -47,7 +50,10 @@ import com.example.agrohub.ui.theme.AgroHubTypography
  * @param navController Navigation controller for screen navigation
  */
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    fieldViewModel: FieldViewModel = viewModel()
+) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Home", "Community")
     val context = LocalContext.current
@@ -107,7 +113,7 @@ fun HomeScreen(navController: NavController) {
             
             // Tab Content
             when (selectedTabIndex) {
-                0 -> HomeTabContent(navController = navController)
+                0 -> HomeTabContent(navController = navController, viewModel = fieldViewModel)
                 1 -> CommunityScreen(
                     navController = navController,
                     feedViewModel = feedViewModel,
@@ -147,11 +153,23 @@ fun HomeScreen(navController: NavController) {
  * - Map preview
  */
 @Composable
-private fun HomeTabContent(navController: NavController) {
+private fun HomeTabContent(
+    navController: NavController,
+    viewModel: FieldViewModel
+) {
     // Load mock data
     val farms = remember { MockDataProvider.generateFarmData() }
-    val quickStats = remember { MockDataProvider.generateQuickStats() }
+    // val quickStats = remember { MockDataProvider.generateQuickStats() } // Using real data now
     val weatherForecast = remember { MockDataProvider.generateWeatherForecast() }
+    
+    // Real data from FieldViewModel
+    val fields by viewModel.fields.collectAsState()
+    
+    val totalFarms = fields.size
+    
+    val pendingTasks = remember(fields) {
+        fields.flatMap { it.tasks }.count { it.status == TaskStatus.PENDING }
+    }
     
     // Animation state for fade-in
     var visible by remember { mutableStateOf(false) }
@@ -184,9 +202,8 @@ private fun HomeTabContent(navController: NavController) {
         // Quick Stats Section
         item {
             QuickStatsSection(
-                totalFarms = quickStats.totalFarms,
-                activeCrops = quickStats.activeCrops,
-                pendingTasks = quickStats.pendingTasks
+                totalFarms = totalFarms,
+                pendingTasks = pendingTasks
             )
         }
         

@@ -33,7 +33,6 @@ import com.example.agrohub.ui.theme.AgroHubTypography
 @Composable
 fun QuickStatsSection(
     totalFarms: Int,
-    activeCrops: Int,
     pendingTasks: Int
 ) {
     Column(
@@ -68,20 +67,7 @@ fun QuickStatsSection(
                 modifier = Modifier.weight(1f)
             )
             
-            // Active Crops Card
-            StatCard(
-                title = "Active Crops",
-                value = activeCrops.toString(),
-                icon = AgroHubIcons.Plant,
-                gradient = Brush.linearGradient(
-                    colors = listOf(
-                        AgroHubColors.SkyBlue,
-                        AgroHubColors.DeepGreen
-                    )
-                ),
-                modifier = Modifier.weight(1f)
-            )
-            
+
             // Pending Tasks Card
             StatCard(
                 title = "Pending Tasks",

@@ -73,8 +73,27 @@ fun AgroHubNavigation(
             
             // If authenticated and currently on sign in screen, navigate to home
             if (isAuthenticated && currentRoute == Routes.SIGN_IN) {
-                navController.navigate(Routes.HOME) {
-                    popUpTo(Routes.SIGN_IN) { inclusive = true }
+                // Sync username to shared prefs for FieldRepository
+                var usernameSynced = false
+                if (tokenManager is com.example.agrohub.security.TokenManagerImpl) {
+                    val username = tokenManager.getUsername()
+                    if (!username.isNullOrBlank()) {
+                        val prefs = context.getSharedPreferences("agrohub_prefs", android.content.Context.MODE_PRIVATE)
+                        prefs.edit().putString("username", username).apply()
+                        println("AgroHubNavigation: Synced username $username to legacy prefs")
+                        usernameSynced = true
+                    }
+                }
+
+                if (usernameSynced) {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.SIGN_IN) { inclusive = true }
+                    }
+                } else {
+                    // Critical error: Authenticated but no username found. Force re-login.
+                    println("AgroHubNavigation: Authenticated but no username found! Clearing tokens.")
+                    tokenManager.clearTokens()
+                    // Stay on SignIn screen (isAuthenticated will be false on next check or UI update)
                 }
             }
         } catch (e: Exception) {

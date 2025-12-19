@@ -2,10 +2,10 @@ package com.example.agrohub.data.repository
 
 import android.content.Context
 import android.location.Geocoder
-import com.example.agrohub.data.remote.NetworkModule
 import com.example.agrohub.domain.model.Field
 import com.example.agrohub.domain.model.FieldPoint
 import com.example.agrohub.domain.model.FieldTask
+import com.example.agrohub.domain.model.TaskStatus
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -21,29 +21,16 @@ import java.util.Locale
  */
 class FieldRepository(private val context: Context) {
     private val database = FirebaseDatabase.getInstance()
-    private val fieldsRef = database.getReference("fields")
     private val geocoder = Geocoder(context, Locale.getDefault())
+    private val prefs = context.getSharedPreferences("agrohub_prefs", Context.MODE_PRIVATE)
     
     /**
-     * Get username from token manager
+     * Get username from SharedPreferences
      */
-    private suspend fun getUsername(): String? {
-        return try {
-            val tokenManager = NetworkModule.provideTokenManager(context) as com.example.agrohub.security.TokenManagerImpl
-            val username = tokenManager.getUsername()
-            
-            if (username.isNullOrBlank()) {
-                println("FieldRepository: No username found in storage")
-                return null
-            }
-            
-            println("FieldRepository: Found username: $username")
-            username
-        } catch (e: Exception) {
-            println("FieldRepository: Error getting username: ${e.message}")
-            e.printStackTrace()
-            null
-        }
+    private fun getUsername(): String? {
+        val username = prefs.getString("username", null)
+        println("FieldRepository: Username from prefs: $username")
+        return username
     }
     
     /**
@@ -68,31 +55,47 @@ class FieldRepository(private val context: Context) {
     
     /**
      * Save a new field to Firebase Realtime Database
+     * Structure: users/{username}/fields/{fieldName}/{data}
      */
     suspend fun saveField(field: Field): Result<String> {
         return try {
+            println("FieldRepository: Starting saveField for '${field.name}'")
+            
             val username = getUsername()
             if (username.isNullOrBlank()) {
+                println("FieldRepository: No username found!")
                 return Result.failure(Exception("Please sign in to save fields"))
             }
             
+            println("FieldRepository: Saving field for username: $username")
+            
             // Calculate center point
-            val center = field.calculateCenter() ?: return Result.failure(Exception("Invalid field boundaries"))
+            val center = field.calculateCenter() ?: run {
+                println("FieldRepository: Failed to calculate center")
+                return Result.failure(Exception("Invalid field boundaries"))
+            }
             
             // Get address for center point
             val address = getAddressFromCoordinates(center.latitude, center.longitude)
             
-            // Calculate area
+            // Calculate area and perimeter
             val area = field.calculateArea()
+            val perimeter = field.calculatePerimeter()
             
-            // Create field ID
-            val fieldId = fieldsRef.child(username).push().key 
-                ?: return Result.failure(Exception("Failed to generate field ID"))
+            println("FieldRepository: Center: ${center.latitude}, ${center.longitude}")
+            println("FieldRepository: Address: $address")
+            println("FieldRepository: Area: $area m²")
+            println("FieldRepository: Perimeter: $perimeter m")
             
+            // Firebase structure: users/{username}/fields/{fieldName}
+            val fieldRef = database.getReference("users")
+                .child(username)
+                .child("fields")
+                .child(field.name)
+            
+            // Store all field data
             val fieldData = hashMapOf(
-                "id" to fieldId,
                 "name" to field.name,
-                "username" to username,
                 "points" to field.points.map { point ->
                     hashMapOf(
                         "latitude" to point.latitude,
@@ -105,23 +108,18 @@ class FieldRepository(private val context: Context) {
                 ),
                 "centerAddress" to address,
                 "areaInSquareMeters" to area,
-                "tasks" to field.tasks.map { task ->
-                    hashMapOf(
-                        "id" to task.id,
-                        "title" to task.title,
-                        "description" to task.description,
-                        "status" to task.status.name,
-                        "dueDate" to task.dueDate,
-                        "createdAt" to task.createdAt
-                    )
-                },
-                "createdAt" to System.currentTimeMillis(),
-                "updatedAt" to System.currentTimeMillis()
+                "perimeterInMeters" to perimeter,
+                "createdAt" to System.currentTimeMillis()
             )
             
-            fieldsRef.child(username).child(fieldId).setValue(fieldData).await()
-            Result.success(fieldId)
+            println("FieldRepository: Saving to: users/$username/fields/${field.name}")
+            fieldRef.setValue(fieldData).await()
+            println("FieldRepository: Field saved successfully!")
+            
+            Result.success(field.name)
         } catch (e: Exception) {
+            println("FieldRepository: Error: ${e.message}")
+            e.printStackTrace()
             Result.failure(Exception("Failed to save field: ${e.message}"))
         }
     }
@@ -130,17 +128,20 @@ class FieldRepository(private val context: Context) {
      * Get all fields for the current user as a Flow
      */
     fun getUserFields(): Flow<List<Field>> = callbackFlow {
-        val username = try {
-            getUsername()
-        } catch (e: Exception) {
-            null
-        }
+        val username = getUsername()
         
         if (username.isNullOrBlank()) {
+            println("FieldRepository: No username, returning empty list")
             trySend(emptyList())
             close()
             return@callbackFlow
         }
+        
+        println("FieldRepository: Loading fields for: $username")
+        
+        val fieldsRef = database.getReference("users")
+            .child(username)
+            .child("fields")
         
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -148,9 +149,7 @@ class FieldRepository(private val context: Context) {
                 
                 snapshot.children.forEach { fieldSnapshot ->
                     try {
-                        val id = fieldSnapshot.child("id").getValue(String::class.java) ?: ""
                         val name = fieldSnapshot.child("name").getValue(String::class.java) ?: ""
-                        val user = fieldSnapshot.child("username").getValue(String::class.java) ?: ""
                         
                         val points = fieldSnapshot.child("points").children.mapNotNull { pointSnapshot ->
                             val lat = pointSnapshot.child("latitude").getValue(Double::class.java)
@@ -168,49 +167,126 @@ class FieldRepository(private val context: Context) {
                         
                         val centerAddress = fieldSnapshot.child("centerAddress").getValue(String::class.java) ?: ""
                         val area = fieldSnapshot.child("areaInSquareMeters").getValue(Double::class.java) ?: 0.0
-                        
-                        val tasks = fieldSnapshot.child("tasks").children.mapNotNull { taskSnapshot ->
-                            try {
-                                FieldTask(
-                                    id = taskSnapshot.child("id").getValue(String::class.java) ?: "",
-                                    title = taskSnapshot.child("title").getValue(String::class.java) ?: "",
-                                    description = taskSnapshot.child("description").getValue(String::class.java) ?: "",
-                                    status = taskSnapshot.child("status").getValue(String::class.java)?.let {
-                                        try { com.example.agrohub.domain.model.TaskStatus.valueOf(it) }
-                                        catch (e: Exception) { com.example.agrohub.domain.model.TaskStatus.PENDING }
-                                    } ?: com.example.agrohub.domain.model.TaskStatus.PENDING,
-                                    dueDate = taskSnapshot.child("dueDate").getValue(Long::class.java),
-                                    createdAt = taskSnapshot.child("createdAt").getValue(Long::class.java) ?: 0L
-                                )
-                            } catch (e: Exception) {
-                                null
-                            }
-                        }
-                        
                         val createdAt = fieldSnapshot.child("createdAt").getValue(Long::class.java) ?: 0L
-                        val updatedAt = fieldSnapshot.child("updatedAt").getValue(Long::class.java) ?: 0L
                         
                         fields.add(
                             Field(
-                                id = id,
+                                id = name,
                                 name = name,
-                                username = user,
+                                username = username,
                                 points = points,
                                 centerPoint = centerPoint,
                                 centerAddress = centerAddress,
                                 areaInSquareMeters = area,
-                                tasks = tasks,
                                 createdAt = createdAt,
-                                updatedAt = updatedAt
+                                tasks = parseTasks(fieldSnapshot.child("tasks"))
                             )
                         )
                     } catch (e: Exception) {
-                        // Skip invalid field
+                        println("FieldRepository: Error parsing field: ${e.message}")
                     }
                 }
                 
-                // Sort by createdAt descending (most recent first)
                 trySend(fields.sortedByDescending { it.createdAt })
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                println("FieldRepository: Firebase error: ${error.message}")
+                close(error.toException())
+            }
+        }
+        
+        fieldsRef.addValueEventListener(listener)
+        awaitClose { fieldsRef.removeEventListener(listener) }
+    }
+    
+    /**
+     * Delete a field by name
+     */
+    suspend fun deleteField(fieldName: String): Result<Unit> {
+        return try {
+            val username = getUsername()
+            if (username.isNullOrBlank()) {
+                return Result.failure(Exception("Please sign in to delete fields"))
+            }
+            
+            database.getReference("users")
+                .child(username)
+                .child("fields")
+                .child(fieldName)
+                .removeValue()
+                .await()
+                
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to delete field: ${e.message}"))
+        }
+    }
+    
+    /**
+     * Add a task to a specific field
+     */
+    suspend fun addTask(fieldName: String, task: FieldTask): Result<String> {
+        return try {
+            val username = getUsername() ?: return Result.failure(Exception("Please sign in"))
+            
+            val taskRef = database.getReference("users")
+                .child(username)
+                .child("fields")
+                .child(fieldName)
+                .child("tasks")
+                .push() // Generate unique ID
+                
+            val taskId = taskRef.key ?: return Result.failure(Exception("Failed to generate task ID"))
+            
+            val taskWithId = task.copy(id = taskId)
+            
+            taskRef.setValue(taskWithId).await()
+            
+            Result.success(taskId)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Get tasks for a specific field
+     */
+    fun getFieldTasks(fieldName: String): Flow<List<FieldTask>> = callbackFlow {
+        val username = getUsername()
+        
+        if (username.isNullOrBlank()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        
+        val tasksRef = database.getReference("users")
+            .child(username)
+            .child("fields")
+            .child(fieldName)
+            .child("tasks")
+            
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val tasks = mutableListOf<FieldTask>()
+                
+                snapshot.children.forEach { taskSnapshot ->
+                    try {
+                        val id = taskSnapshot.child("id").getValue(String::class.java) ?: ""
+                        val title = taskSnapshot.child("title").getValue(String::class.java) ?: ""
+                        val content = taskSnapshot.child("content").getValue(String::class.java) ?: ""
+                        val statusStr = taskSnapshot.child("status").getValue(String::class.java) ?: "PENDING"
+                        val status = try { TaskStatus.valueOf(statusStr) } catch (e: Exception) { TaskStatus.PENDING }
+                        val createdAt = taskSnapshot.child("createdAt").getValue(Long::class.java) ?: 0L
+                        
+                        tasks.add(FieldTask(id, title, content, status, createdAt))
+                    } catch (e: Exception) {
+                        println("FieldRepository: Error parsing task: ${e.message}")
+                    }
+                }
+                
+                trySend(tasks.sortedByDescending { it.createdAt })
             }
             
             override fun onCancelled(error: DatabaseError) {
@@ -218,25 +294,53 @@ class FieldRepository(private val context: Context) {
             }
         }
         
-        fieldsRef.child(username).addValueEventListener(listener)
-        
-        awaitClose { fieldsRef.child(username).removeEventListener(listener) }
+        tasksRef.addValueEventListener(listener)
+        awaitClose { tasksRef.removeEventListener(listener) }
+    }
+
+    private fun parseTasks(tasksSnapshot: DataSnapshot): List<FieldTask> {
+        val tasks = mutableListOf<FieldTask>()
+        try {
+            tasksSnapshot.children.forEach { taskSnapshot ->
+                val id = taskSnapshot.child("id").getValue(String::class.java) ?: ""
+                val title = taskSnapshot.child("title").getValue(String::class.java) ?: ""
+                val content = taskSnapshot.child("content").getValue(String::class.java) ?: ""
+                val statusStr = taskSnapshot.child("status").getValue(String::class.java) ?: "PENDING"
+                val status = try { TaskStatus.valueOf(statusStr) } catch (e: Exception) { TaskStatus.PENDING }
+                val createdAt = taskSnapshot.child("createdAt").getValue(Long::class.java) ?: 0L
+                
+                tasks.add(FieldTask(id, title, content, status, createdAt))
+            }
+        } catch (e: Exception) {
+            println("FieldRepository: Error parsing tasks: ${e.message}")
+        }
+        return tasks.sortedByDescending { it.createdAt }
     }
     
-    /**
-     * Delete a field by ID
-     */
-    suspend fun deleteField(fieldId: String): Result<Unit> {
+    suspend fun updateTaskStatus(fieldName: String, taskId: String, isCompleted: Boolean): Result<Unit> {
         return try {
-            val username = getUsername()
-            if (username.isNullOrBlank()) {
-                return Result.failure(Exception("Please sign in to delete fields"))
-            }
+            val username = getUsername() ?: return Result.failure(Exception("Please sign in"))
             
-            fieldsRef.child(username).child(fieldId).removeValue().await()
+            val status = if (isCompleted) TaskStatus.COMPLETED else TaskStatus.PENDING
+            
+            // We need to find the specific task key (which might be different from taskId if taskId is just a property)
+            // But usually the key IS the taskId if we saved it that way. 
+            // In addTask we did:   val taskRef = ...push();  val taskId = taskRef.key;  val taskWithId = task.copy(id = taskId)
+            // So the key in Firebase is indeed the taskId.
+            
+            database.getReference("users")
+                .child(username)
+                .child("fields")
+                .child(fieldName)
+                .child("tasks")
+                .child(taskId)
+                .child("status")
+                .setValue(status.name)
+                .await()
+                
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(Exception("Failed to delete field: ${e.message}"))
+            Result.failure(e)
         }
     }
 }

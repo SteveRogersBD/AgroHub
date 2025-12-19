@@ -1,5 +1,6 @@
 package com.example.agrohub.ui.screens.auth
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -148,10 +149,16 @@ fun WorkingSignInScreen(navController: NavController) {
                                 val authService = NetworkModule.provideAuthApiService(context)
                                 val response = authService.login(LoginRequestDto(email, password))
                                 
-                                // Save tokens and username
+                                // Save tokens
                                 val tokenManager = NetworkModule.provideTokenManager(context) as com.example.agrohub.security.TokenManagerImpl
                                 tokenManager.saveTokens(response.accessToken, response.refreshToken, response.expiresIn)
                                 tokenManager.saveUsername(response.username)
+                                
+                                // Save username to simple SharedPreferences for field mapping
+                                val prefs = context.getSharedPreferences("agrohub_prefs", Context.MODE_PRIVATE)
+                                prefs.edit().putString("username", response.username).apply()
+                                
+                                println("Login: Saved username to prefs: ${response.username}")
                                 
                                 // Navigate to home
                                 navController.navigate(Routes.HOME) {
