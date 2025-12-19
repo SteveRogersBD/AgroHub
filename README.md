@@ -237,20 +237,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact & Support
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/agrohub/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/agrohub/discussions)
-- **Email:** your.email@example.com
+- **Issues:** [GitHub Issues](https://github.com/SteveRogersBD/Agrohub/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/SteveRogersBD/Agrohub/discussions)
+- **Email:** cd43641@truman.edu
 
-## 🗺️ Roadmap
-
-- [ ] Offline mode support
-- [ ] Multi-language support
-- [ ] Advanced analytics dashboard
-- [ ] IoT sensor integration
-- [ ] Crop yield prediction
-- [ ] Market price tracking
-- [ ] Export data to PDF/Excel
-- [ ] Push notifications for weather alerts
 
 ## 📊 Project Status
 
@@ -266,6 +256,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ⭐ Star this repo if you find it helpful!
 
-[Report Bug](https://github.com/yourusername/agrohub/issues) • [Request Feature](https://github.com/yourusername/agrohub/issues)
+[Report Bug](https://github.com/SteveRogersBD/Agrohub/issues) • [Request Feature](https://github.com/SteveRogersBD/Agrohub/issues)
 
 </div>
