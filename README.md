@@ -43,7 +43,33 @@ AgroHub is a modern Android application designed to revolutionize farming practi
 |---------|------------------|
 | ![Weather](docs/screenshots/weather.png) | ![Disease](docs/screenshots/disease.png) |
 
+
 </div>
+<div align="center">
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/home.png" width="220"/></td>
+    <td><img src="docs/screenshots/map.png" width="220"/></td>
+    <td><img src="docs/screenshots/chat.png" width="220"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Home</b></td>
+    <td align="center"><b>Field Map</b></td>
+    <td align="center"><b>AI Assistant</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/weather.png" width="220"/></td>
+    <td><img src="docs/screenshots/disease.png" width="220"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Weather</b></td>
+    <td align="center"><b>Disease Detection</b></td>
+  </tr>
+</table>
+
+</div>
+
 <p align="center">
   <a href="https://youtu.be/phoPuOGwV9E">
     <img src="https://img.youtube.com/vi/phoPuOGwV9E/hqdefault.jpg" alt="Watch on YouTube" />
