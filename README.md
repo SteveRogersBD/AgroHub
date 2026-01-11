@@ -84,7 +84,12 @@ AgroHub is a modern Android application designed to revolutionize farming practi
 | ![Weather](docs/screenshots/weather.png) | ![Disease](docs/screenshots/disease.png) |
 
 </div>
-[![Watch on YouTube](https://img.youtube.com/vi/phoPuOGwV9E/hqdefault.jpg)](https://youtu.be/phoPuOGwV9E)
+<p align="center">
+  <a href="https://youtu.be/phoPuOGwV9E">
+    <img src="https://img.youtube.com/vi/phoPuOGwV9E/hqdefault.jpg" alt="Watch on YouTube" />
+  </a>
+</p>
+
 
 ## 🛠️ Tech Stack
 
