@@ -23,53 +23,13 @@ AgroHub is a modern Android application designed to revolutionize farming practi
 
 ## ✨ Features
 
-### 🏠 **Smart Dashboard**
-- Real-time farm statistics and crop health monitoring
-- Quick access to essential farming tools
-- Weather warnings and alerts
-- Interactive farm overview with visual insights
+- Smart dashboard for farm and crop monitoring  
+- AI assistant (Google Gemini) for agriculture guidance  
+- Interactive field mapping with Google Maps  
+- Real-time weather insights and alerts  
+- AI-based crop disease detection  
+- Community forum
 
-### 🤖 **AI-Powered Agriculture Assistant**
-- Powered by Google Gemini AI
-- Expert advice on crop management, pest control, and soil health
-- Natural language conversations about farming queries
-- Context-aware responses tailored to agriculture
-
-### 🗺️ **Interactive Field Mapping**
-- Google Maps integration for field visualization
-- Mark and track multiple farm locations
-- Hybrid satellite view for detailed field analysis
-- GPS-based field boundary tracking
-
-### 🌤️ **Weather Intelligence**
-- Real-time weather forecasts
-- Risk level assessments for farming activities
-- Temperature, humidity, and precipitation tracking
-- Weather-based farming recommendations
-
-### 🔬 **Disease Detection**
-- AI-powered crop disease identification
-- Camera-based plant health analysis
-- Treatment recommendations
-- Disease prevention tips
-
-### 🛒 **Marketplace**
-- Buy and sell agricultural products
-- Connect with suppliers and buyers
-- Product listings with detailed information
-- Secure transaction support
-
-### 👥 **Community Hub**
-- Connect with fellow farmers
-- Share experiences and best practices
-- Community discussions and forums
-- Knowledge sharing platform
-
-### 📊 **Farm Management**
-- Track multiple farms and fields
-- Crop status monitoring
-- Task management and reminders
-- Historical data and analytics
 
 ## 📱 Screenshots
 
